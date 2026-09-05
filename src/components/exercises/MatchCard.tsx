@@ -31,6 +31,10 @@ export function MatchCard({ exercise, onComplete }: Props) {
   const [wrongPair, setWrongPair] = useState<string | null>(null);
   const [mistakes, setMistakes] = useState(0);
 
+  // Der Schluessel allein reicht nicht: dieselbe Lektion erzeugt beim
+  // erneuten Oeffnen denselben Schluessel, aber andere Begriffe.
+  const identity = exercise.pairs.map((p) => p.termId).join('|');
+
   useEffect(() => {
     setLeft(shuffle(exercise.pairs.map((p) => ({ termId: p.termId, text: p.left, side: 'left' as Side }))));
     setRight(shuffle(exercise.pairs.map((p) => ({ termId: p.termId, text: p.right, side: 'right' as Side }))));
@@ -38,7 +42,7 @@ export function MatchCard({ exercise, onComplete }: Props) {
     setSolved([]);
     setMistakes(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exercise.key]);
+  }, [exercise.key, identity]);
 
   function tap(cell: Cell) {
     if (solved.includes(cell.termId)) return;

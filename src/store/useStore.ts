@@ -96,7 +96,12 @@ export const useStore = create<State>()(
     (set, get) => ({
       ...initial,
 
-      setCourse: (native, target) => set({ native, target }),
+      // Muttersprache und Lernsprache muessen sich unterscheiden - sonst
+      // stuenden in jeder Uebung auf beiden Seiten dieselben Woerter.
+      setCourse: (native, target) => {
+        if (native === target) return;
+        set({ native, target });
+      },
 
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
 

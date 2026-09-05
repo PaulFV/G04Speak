@@ -192,13 +192,16 @@ export interface BuildLessonOptions {
 export function buildLesson({ lesson, native, target, reviewTermIds = [] }: BuildLessonOptions): Exercise[] {
   const lessonTerms = lesson.termIds
     .map(termById)
-    .filter((t): t is Term => Boolean(t));
+    // Manche Woerter sind in zwei Sprachen gleich geschrieben ("verde" im
+    // Spanischen und Rumaenischen). Fuer dieses Paar gibt es nichts zu
+    // uebersetzen, also faellt der Begriff hier heraus.
+    .filter((t): t is Term => t !== undefined && t[native] !== t[target]);
 
   if (lessonTerms.length === 0) return [];
 
   const reviewTerms = reviewTermIds
     .map(termById)
-    .filter((t): t is Term => Boolean(t) && !lesson.termIds.includes(t.id))
+    .filter((t): t is Term => t !== undefined && !lesson.termIds.includes(t.id))
     .slice(0, 3);
 
   const exercises: Exercise[] = [];
