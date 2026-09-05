@@ -38,6 +38,7 @@ export default function LessonScreen() {
 
   const native = useStore((s) => s.native);
   const target = useStore((s) => s.target);
+  const skillLevel = useStore((s) => s.skillLevel);
   const hearts = useStore((s) => s.hearts);
   const gems = useStore((s) => s.gems);
   const stats = useStore((s) => s.stats);
@@ -57,6 +58,7 @@ export default function LessonScreen() {
       lesson,
       native,
       target,
+      skillLevel,
       // Wiederholungslektionen decken ihre Einheit schon selbst ab.
       reviewTermIds: lesson.isReview ? [] : dueTermIds(stats, 3),
     });
@@ -190,6 +192,10 @@ export default function LessonScreen() {
   }
 
   function quit() {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      if (window.confirm(`${strings.quitTitle}\n${strings.quitDesc}`)) router.replace('/(tabs)');
+      return;
+    }
     Alert.alert(strings.quitTitle, strings.quitDesc, [
       { text: strings.keepLearning, style: 'cancel' },
       { text: strings.endLesson, style: 'destructive', onPress: () => router.replace('/(tabs)') },

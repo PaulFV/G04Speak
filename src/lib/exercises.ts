@@ -1,4 +1,5 @@
 import { Lang } from '../data/languages';
+import { SkillLevel } from '../store/useStore';
 import { TERMS, Term, termById } from '../data/vocabulary';
 import { Lesson } from './course';
 
@@ -183,13 +184,14 @@ export interface BuildLessonOptions {
   target: Lang;
   /** Faellige Begriffe aus frueheren Lektionen, die mit eingestreut werden. */
   reviewTermIds?: string[];
+  skillLevel?: SkillLevel | null;
 }
 
 /**
  * Setzt eine Lektion zusammen: ein Zuordnungsspiel zum Aufwaermen, danach
  * gemischte Aufgabentypen, am Ende die schwereren Frei-Eingaben.
  */
-export function buildLesson({ lesson, native, target, reviewTermIds = [] }: BuildLessonOptions): Exercise[] {
+export function buildLesson({ lesson, native, target, reviewTermIds = [], skillLevel = 'beginner' }: BuildLessonOptions): Exercise[] {
   const lessonTerms = lesson.termIds
     .map(termById)
     // Manche Woerter sind in zwei Sprachen gleich geschrieben ("verde" im
@@ -234,8 +236,9 @@ export function buildLesson({ lesson, native, target, reviewTermIds = [] }: Buil
     ])());
   }
 
-  // Zum Schluss zwei freie Eingaben - der schwerste Aufgabentyp.
-  for (const term of shuffle(lessonTerms).slice(0, 2)) {
+  // Freie Eingaben sind der schwerste Aufgabentyp und richten sich nach dem Level.
+  const typeCount = skillLevel === 'beginner' ? 0 : skillLevel === 'advanced' ? 1 : 3;
+  for (const term of shuffle(lessonTerms).slice(0, typeCount)) {
     exercises.push(typeEx(term, native, target, nextKey()));
   }
 
