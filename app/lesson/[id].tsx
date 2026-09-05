@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import {
@@ -22,6 +21,7 @@ import { MatchCard } from '../../src/components/exercises/MatchCard';
 import { TypeCard } from '../../src/components/exercises/TypeCard';
 import { t } from '../../src/data/i18n';
 import { lessonById } from '../../src/lib/course';
+import { hapticError, hapticSuccess } from '../../src/lib/haptics';
 import { Exercise, buildLesson, isAnswerCorrect, requeue } from '../../src/lib/exercises';
 import { speak } from '../../src/lib/speech';
 import { dueTermIds } from '../../src/lib/srs';
@@ -130,7 +130,7 @@ export default function LessonScreen() {
     record(exercise.termId, correct);
 
     if (correct) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hapticSuccess();
       speak(exercise.answer, exercise.answerLang);
       setVerdict('correct');
       return;
@@ -138,7 +138,7 @@ export default function LessonScreen() {
 
     // Falsch beantwortete Aufgaben wandern ans Ende der Runde und muessen
     // erneut geloest werden, bevor die Lektion endet.
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    hapticError();
     loseHeart();
     setQueue((list) => requeue(list, index));
     setVerdict('wrong');
@@ -281,7 +281,7 @@ export default function LessonScreen() {
               exercise={exercise}
               onComplete={(mistakes) => {
                 for (const pair of exercise.pairs) record(pair.termId, mistakes === 0);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                hapticSuccess();
                 advance();
               }}
             />
