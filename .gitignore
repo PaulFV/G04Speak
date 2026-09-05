@@ -21,3 +21,6 @@ yarn-error.log
 .env.local
 .idea/
 .vscode/
+
+# Web-Export (wird von GitHub Actions gebaut)
+dist/

@@ -32,6 +32,12 @@ Dadurch ist kein Inhalt an eine Sprachrichtung gebunden. Die App erzeugt jede Ko
 
 Falsch beantwortete Aufgaben wandern ans Ende der Runde und müssen erneut gelöst werden, bevor die Lektion endet.
 
+## Im Browser ausprobieren
+
+**[paulfv.github.io/GoSpeek](https://paulfv.github.io/GoSpeek/)** — die Web-Fassung, gebaut und veröffentlicht bei jedem Push auf `main`.
+
+Sie dient zum schnellen Reinschauen. Die eigentliche App ist die native Fassung: nur dort gibt es Sprachausgabe mit den Gerätestimmen, haptisches Feedback und echte Flaggen-Symbole.
+
 ## Schnellstart
 
 ```bash
