@@ -1,7 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../src/components/Button';
@@ -10,20 +18,35 @@ import { LANGUAGE_LIST, Lang, LANGUAGES } from '../src/data/languages';
 import { useStore } from '../src/store/useStore';
 import { colors, font, radius, spacing } from '../src/theme/theme';
 
-/**
- * Kursauswahl in zwei Schritten: erst die Muttersprache, dann die Lernsprache.
- * Aus den acht Sprachen ergeben sich 56 moegliche Kurse.
- */
+/** Kursauswahl in zwei kurzen, klar erkennbaren Schritten. */
 export default function Onboarding() {
   const router = useRouter();
   const setCourse = useStore((s) => s.setCourse);
+  const savedNative = useStore((s) => s.native);
+  const { width } = useWindowDimensions();
 
-  const [native, setNative] = useState<Lang | null>(null);
+  const [native, setNative] = useState<Lang | null>(savedNative);
   const [target, setTarget] = useState<Lang | null>(null);
+  const [step, setStep] = useState<'native' | 'target'>(savedNative ? 'target' : 'native');
 
   // Vor der Wahl der Muttersprache zeigen wir die App auf Deutsch.
   const strings = t(native);
-  const step = native ? 'target' : 'native';
+  const stepNumber = step === 'native' ? 1 : 2;
+  const compact = width < 560;
+
+  function choose(language: Lang) {
+    if (step === 'native') {
+      setNative(language);
+      setTarget(null);
+      return;
+    }
+    setTarget(language);
+  }
+
+  function goBack() {
+    setStep('native');
+    setTarget(null);
+  }
 
   function start() {
     if (!native || !target) return;
@@ -31,92 +54,206 @@ export default function Onboarding() {
     router.replace('/(tabs)');
   }
 
+  const languages = LANGUAGE_LIST.filter(
+    (language) => step === 'native' || language.code !== native,
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.logo}>GoSpeak</Text>
-        <Text style={styles.tagline}>{strings.tagline}</Text>
-      </View>
+      <ScrollView
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.shell}>
+          <View style={styles.hero}>
+            <Image
+              accessibilityIgnoresInvertColors
+              accessibilityLabel="GoSpeak"
+              source={require('../assets/gospeak-space-icon.png')}
+              style={styles.logoMark}
+            />
+            <View style={styles.heroCopy}>
+              <Text style={styles.logo}>GoSpeak</Text>
+              <Text style={styles.tagline}>{strings.tagline}</Text>
+              <View style={styles.trustRow}>
+                <TrustItem icon="translate" label={strings.languagesBadge} />
+                <TrustItem icon="swap-horizontal" label={strings.coursesBadge} />
+                <TrustItem icon="shield-check-outline" label={strings.privateBadge} />
+              </View>
+            </View>
+          </View>
 
-      <Text style={styles.question}>{step === 'native' ? strings.iSpeak : strings.iLearn}</Text>
+          <View style={styles.card}>
+            <View style={styles.stepHeader}>
+              <View>
+                <Text style={styles.eyebrow}>{stepNumber} / 2</Text>
+                <Text accessibilityRole="header" style={styles.question}>
+                  {step === 'native' ? strings.iSpeak : strings.iLearn}
+                </Text>
+              </View>
+              <View accessibilityLabel={`${stepNumber} von 2`} style={styles.dots}>
+                <View style={styles.dotActive} />
+                <View style={stepNumber === 2 ? styles.dotActive : styles.dot} />
+              </View>
+            </View>
 
-      <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
-        {LANGUAGE_LIST
-          // Niemand lernt seine eigene Muttersprache.
-          .filter((language) => step === 'native' || language.code !== native)
-          .map((language) => {
-            const selected = step === 'native' ? native === language.code : target === language.code;
-            return (
-              <Pressable
-                key={language.code}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() =>
-                  step === 'native' ? setNative(language.code) : setTarget(language.code)
-                }
-                style={({ pressed }) => [
-                  styles.card,
-                  selected && styles.cardSelected,
-                  pressed && styles.cardPressed,
-                ]}
-              >
-                <Text style={styles.cardFlag}>{language.flag}</Text>
-                <Text style={styles.cardName}>{language.name}</Text>
-              </Pressable>
-            );
-          })}
+            <View accessibilityRole="radiogroup" style={styles.grid}>
+              {languages.map((language) => {
+                const selected = step === 'native' ? native === language.code : target === language.code;
+                return (
+                  <Pressable
+                    key={language.code}
+                    accessibilityLabel={language.name}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    onPress={() => choose(language.code)}
+                    style={({ pressed }) => [
+                      styles.languageCard,
+                      { width: compact ? '48%' : '31.5%' },
+                      selected && styles.languageCardSelected,
+                      pressed && styles.languageCardPressed,
+                    ]}
+                  >
+                    <View style={[styles.flagBadge, { backgroundColor: `${language.color}14` }]}>
+                      <MaterialCommunityIcons name="translate" size={21} color={language.code === 'de' ? colors.blue : language.color} />
+                    </View>
+                    <Text numberOfLines={1} style={[styles.cardName, selected && styles.languageCardSelectedText]}>
+                      {language.name}
+                    </Text>
+                    {selected ? (
+                      <MaterialCommunityIcons
+                        name="check-circle"
+                        size={20}
+                        color={colors.blue}
+                        style={styles.check}
+                      />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.footer}>
+              {step === 'target' && native ? (
+                <Pressable
+                  accessibilityLabel={`${strings.iSpeak}: ${LANGUAGES[native].name}. Zurück`}
+                  accessibilityRole="button"
+                  onPress={goBack}
+                  style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
+                >
+                  <MaterialCommunityIcons name="arrow-left" size={20} color={colors.textMuted} />
+                  <Text style={styles.backText}>
+                    {step === 'target' && native ? LANGUAGES[native].name : 'Level'}
+                  </Text>
+                </Pressable>
+              ) : (
+                <View />
+              )}
+
+              <Button
+                label={step === 'native' ? strings.next : strings.startLearning}
+                disabled={step === 'native' ? !native : !target}
+                onPress={step === 'native' ? () => setStep('target') : start}
+                style={styles.cta}
+              />
+            </View>
+          </View>
+
+          <View style={styles.privacyNote}>
+            <MaterialCommunityIcons name="lock-outline" size={18} color={colors.purple} />
+            <Text style={styles.privacyText}>{strings.privacyNote}</Text>
+          </View>
+        </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        {step === 'target' ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              setNative(null);
-              setTarget(null);
-            }}
-            style={styles.back}
-          >
-            <MaterialCommunityIcons name="chevron-left" size={22} color={colors.textMuted} />
-            <Text style={styles.backText}>
-              {LANGUAGES[native as Lang].flag} {LANGUAGES[native as Lang].name}
-            </Text>
-          </Pressable>
-        ) : null}
-
-        <Button
-          label={strings.startLearning}
-          disabled={!native || !target}
-          onPress={start}
-        />
-      </View>
     </SafeAreaView>
   );
 }
 
+function TrustItem({ icon, label }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string }) {
+  return (
+    <View style={styles.trustItem}>
+      <MaterialCommunityIcons name={icon} size={17} color={colors.blueDark} />
+      <Text style={styles.trustText}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: spacing.lg },
-  header: { alignItems: 'center', paddingTop: spacing.xl, paddingBottom: spacing.lg },
-  logo: { fontSize: 40, fontWeight: '900', color: colors.green, letterSpacing: -1 },
-  tagline: { ...font.body, color: colors.textMuted, marginTop: spacing.xs, textAlign: 'center' },
-  question: { ...font.h2, color: colors.text, marginBottom: spacing.lg },
-  grid: { gap: spacing.md, paddingBottom: spacing.lg },
-  card: {
+  screen: { flex: 1, backgroundColor: colors.bg },
+  page: { flexGrow: 1, padding: spacing.lg, justifyContent: 'center' },
+  shell: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg },
+  hero: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
+    justifyContent: 'center',
+    gap: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  logoMark: { width: 88, height: 88, borderRadius: 22 },
+  heroCopy: { flexShrink: 1 },
+  logo: { fontSize: 40, fontWeight: '900', color: '#4C1D95', letterSpacing: -1.5 },
+  tagline: { ...font.body, color: colors.textMuted, marginTop: 2 },
+  trustRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: '#E6F7FF',
+  },
+  trustText: { ...font.small, color: colors.blueDark },
+  card: {
+    padding: spacing.xl,
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: '#DDD8F7',
+    backgroundColor: colors.bgAlt,
+    gap: spacing.lg,
+    shadowColor: '#35236B',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 3,
+  },
+  stepHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  eyebrow: { ...font.small, color: colors.greenDark, letterSpacing: 1 },
+  question: { ...font.h1, color: colors.text, marginTop: 2 },
+  dots: { flexDirection: 'row', gap: spacing.xs },
+  dot: { width: 24, height: 7, borderRadius: radius.pill, backgroundColor: colors.border },
+  dotActive: { width: 24, height: 7, borderRadius: radius.pill, backgroundColor: colors.green },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  languageCard: {
+    minHeight: 86,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 2,
     borderBottomWidth: 4,
     borderColor: colors.border,
     backgroundColor: colors.bg,
   },
-  cardSelected: { borderColor: colors.blue, backgroundColor: '#DDF4FF' },
-  cardPressed: { borderBottomWidth: 2, marginTop: 2 },
-  cardFlag: { fontSize: 30 },
-  cardName: { ...font.h3, color: colors.text },
-  footer: { paddingVertical: spacing.lg, gap: spacing.md },
-  back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
+  languageCardSelected: { borderColor: colors.blue, backgroundColor: '#102F45' },
+  languageCardPressed: { transform: [{ scale: 0.985 }] },
+  flagBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardName: { ...font.body, color: colors.text, flex: 1 },
+  languageCardSelectedText: { color: '#F6F7FF' },
+  check: { position: 'absolute', top: 7, right: 7 },
+  footer: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
+  back: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm },
+  backPressed: { opacity: 0.65 },
   backText: { ...font.body, color: colors.textMuted },
+  cta: { flex: 1 },
+  privacyNote: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.xs },
+  privacyText: { ...font.small, color: '#5B43A5', textAlign: 'center' },
 });

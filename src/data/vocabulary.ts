@@ -23,7 +23,7 @@ export interface UnitInfo {
 export const UNITS: UnitInfo[] = [
   {
     id: 'greetings',
-    icon: 'hand-wave',
+    icon: 'currency-usd',
     color: '#58CC02',
     title: {
       de: 'Begrüßung', en: 'Greetings', es: 'Saludos', ro: 'Salutări',

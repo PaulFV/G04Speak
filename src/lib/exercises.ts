@@ -246,9 +246,11 @@ export function buildLesson({ lesson, native, target, reviewTermIds = [] }: Buil
  * Vergleich fuer freie Eingaben: Gross-/Kleinschreibung, Satzzeichen und
  * doppelte Leerzeichen werden ignoriert, damit Tippfehler nicht unfair sind.
  */
-export function normalize(value: string): string {
-  return value
+export function normalize(value: unknown): string {
+  return String(value ?? '')
+    .normalize('NFKC')
     .toLocaleLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/[.,!?;:¿¡"'()]/g, '')
     .replace(/\s+/g, ' ')
     .trim();

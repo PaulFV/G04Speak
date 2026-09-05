@@ -33,7 +33,7 @@ export function ChooseCard({ exercise, selected, onSelect, locked }: Props) {
         </Pressable>
       ) : (
         <View style={styles.prompt}>
-          <Text style={styles.promptFlag}>{LANGUAGES[exercise.promptLang].flag}</Text>
+          <Text style={styles.promptLanguage}>{LANGUAGES[exercise.promptLang].name}</Text>
           <Text style={styles.promptText}>{exercise.prompt}</Text>
         </View>
       )}
@@ -65,7 +65,7 @@ export function ChooseCard({ exercise, selected, onSelect, locked }: Props) {
 const styles = StyleSheet.create({
   wrap: { gap: spacing.xl },
   prompt: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  promptFlag: { fontSize: 34 },
+  promptLanguage: { ...font.small, color: colors.blue, minWidth: 86 },
   promptText: { ...font.h2, color: colors.text, flex: 1 },
   speaker: {
     alignSelf: 'flex-start',

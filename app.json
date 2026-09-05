@@ -2,16 +2,17 @@
   "expo": {
     "name": "GoSpeak",
     "slug": "gospeak",
+    "description": "Lerne acht Sprachen kostenlos, spielerisch und ohne Konto.",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/gospeak-space-icon.png",
     "scheme": "gospeak",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/gospeak-space-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#58CC02"
+      "backgroundColor": "#090B3D"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,8 +20,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#58CC02"
+        "foregroundImage": "./assets/gospeak-space-mark.png",
+        "backgroundColor": "#090B3D"
       },
       "package": "com.gospeak.app",
       "edgeToEdgeEnabled": true
@@ -28,15 +29,15 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/gospeak-space-icon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#58CC02",
-          "image": "./assets/splash.png",
+          "backgroundColor": "#090B3D",
+          "image": "./assets/gospeak-space-mark.png",
           "imageWidth": 200
         }
       ],

@@ -6,13 +6,16 @@ import { Lang } from '../data/languages';
 import { TermStat, advance, isLearned } from '../lib/srs';
 
 export const MAX_HEARTS = 5;
-/** Ein Herz erholt sich alle 30 Minuten von selbst. */
-export const HEART_REGEN_MS = 30 * 60 * 1000;
+/** Ein Herz erholt sich alle 1 Minute von selbst. */
+export const HEART_REGEN_MS = 60 * 1000;
 export const REFILL_COST = 50;
 export const XP_PER_LESSON = 10;
 export const XP_PERFECT_BONUS = 5;
 
 export type DailyGoal = 10 | 20 | 30 | 50;
+export type ThemeMode = 'light' | 'dark';
+export type CryptoCurrency = 'BTC' | 'XRP';
+export type SkillLevel = 'beginner' | 'advanced' | 'pro' | 'teacher';
 
 function dayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
@@ -43,6 +46,9 @@ interface State {
 
   native: Lang | null;
   target: Lang | null;
+  themeMode: ThemeMode;
+  cryptoCurrency: CryptoCurrency;
+  skillLevel: SkillLevel | null;
 
   xp: number;
   gems: number;
@@ -56,16 +62,22 @@ interface State {
   xpToday: number;
   xpTodayDay: string;
   weeklyXp: number;
+  lastBonusDay: string | null;
 
   completed: Record<string, number>;
   stats: Record<string, TermStat>;
   unlockedAchievements: string[];
 
   setCourse: (native: Lang, target: Lang) => void;
+  setNativeLanguage: (native: Lang) => void;
+  setThemeMode: (themeMode: ThemeMode) => void;
+  setCryptoCurrency: (cryptoCurrency: CryptoCurrency) => void;
+  setSkillLevel: (skillLevel: SkillLevel) => void;
   setDailyGoal: (goal: DailyGoal) => void;
   regenerateHearts: () => void;
   loseHeart: () => void;
   refillHearts: () => boolean;
+  claimDailyBonus: () => boolean;
   finishLesson: (result: LessonResult) => { xpGained: number; leveledUp: boolean };
   unlockAchievement: (id: string) => void;
   learnedCount: () => number;
@@ -76,6 +88,9 @@ const initial = {
   hydrated: false,
   native: null as Lang | null,
   target: null as Lang | null,
+  themeMode: 'light' as ThemeMode,
+  cryptoCurrency: 'BTC' as CryptoCurrency,
+  skillLevel: null as SkillLevel | null,
   xp: 0,
   gems: 100,
   hearts: MAX_HEARTS,
@@ -86,6 +101,7 @@ const initial = {
   xpToday: 0,
   xpTodayDay: dayKey(),
   weeklyXp: 0,
+  lastBonusDay: null as string | null,
   completed: {} as Record<string, number>,
   stats: {} as Record<string, TermStat>,
   unlockedAchievements: [] as string[],
@@ -102,6 +118,14 @@ export const useStore = create<State>()(
         if (native === target) return;
         set({ native, target });
       },
+      setNativeLanguage: (native) => {
+        const { target } = get();
+        set({ native, target: target === native ? null : target });
+      },
+
+      setThemeMode: (themeMode) => set({ themeMode }),
+      setCryptoCurrency: (cryptoCurrency) => set({ cryptoCurrency }),
+      setSkillLevel: (skillLevel) => set({ skillLevel }),
 
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
 
@@ -134,6 +158,14 @@ export const useStore = create<State>()(
         const { gems } = get();
         if (gems < REFILL_COST) return false;
         set({ gems: gems - REFILL_COST, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() });
+        return true;
+      },
+
+      claimDailyBonus: () => {
+        const state = get();
+        const today = dayKey();
+        if (state.lastBonusDay === today) return false;
+        set({ gems: state.gems + 50, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now(), lastBonusDay: today });
         return true;
       },
 

@@ -1,16 +1,24 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressBar } from '../../src/components/ProgressBar';
 import { t } from '../../src/data/i18n';
 import { LANGUAGES } from '../../src/data/languages';
 import { TERMS } from '../../src/data/vocabulary';
-import { DailyGoal, levelFromXp, useStore, xpIntoLevel } from '../../src/store/useStore';
+import { DailyGoal, SkillLevel, levelFromXp, useStore, xpIntoLevel } from '../../src/store/useStore';
 import { colors, font, radius, spacing } from '../../src/theme/theme';
 
 const GOALS: DailyGoal[] = [10, 20, 30, 50];
+const SKILL_LEVELS: { id: SkillLevel; name: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
+  { id: 'beginner', name: 'Anfänger', icon: 'seed-outline' },
+  { id: 'advanced', name: 'Fortgeschritten', icon: 'trending-up' },
+  { id: 'pro', name: 'Profi', icon: 'rocket-launch-outline' },
+  { id: 'teacher', name: 'Lehrer', icon: 'school-outline' },
+];
 
 export default function Profile() {
   const router = useRouter();
@@ -22,6 +30,38 @@ export default function Profile() {
   const setDailyGoal = useStore((s) => s.setDailyGoal);
   const learned = useStore((s) => s.learnedCount());
   const reset = useStore((s) => s.reset);
+  const themeMode = useStore((s) => s.themeMode);
+  const setThemeMode = useStore((s) => s.setThemeMode);
+  const cryptoCurrency = useStore((s) => s.cryptoCurrency);
+  const setCryptoCurrency = useStore((s) => s.setCryptoCurrency);
+  const skillLevel = useStore((s) => s.skillLevel);
+  const setSkillLevel = useStore((s) => s.setSkillLevel);
+  const setNativeLanguage = useStore((s) => s.setNativeLanguage);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof localStorage !== 'undefined') setAvatarUri(localStorage.getItem('gospeak-avatar'));
+  }, []);
+
+  function chooseAvatar() {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Profilbild', 'Die Bildauswahl ist aktuell in der Web-Version verfügbar.');
+      return;
+    }
+    fileInput.current?.click();
+  }
+
+  function onAvatarFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const uri = String(reader.result);
+      setAvatarUri(uri);
+      try { localStorage.setItem('gospeak-avatar', uri); } catch { /* Speicher kann voll sein. */ }
+    };
+    reader.readAsDataURL(file);
+  }
 
   const strings = t(native);
   const level = levelFromXp(xp);
@@ -44,12 +84,13 @@ export default function Profile() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <View style={styles.avatar}>
-            <MaterialCommunityIcons name="account" size={48} color={colors.textOnDark} />
-          </View>
-          <Text style={styles.course}>
-            {native ? LANGUAGES[native].flag : ''} → {target ? LANGUAGES[target].flag : ''}{' '}
-            {target ? LANGUAGES[target].name : ''}
+          <Pressable accessibilityRole="button" accessibilityLabel="Profilbild ändern" onPress={chooseAvatar} style={styles.avatar}>
+            {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <MaterialCommunityIcons name="account" size={48} color={colors.textOnDark} />}
+            <View pointerEvents="none" style={styles.avatarEdit}><MaterialCommunityIcons name="pencil" size={16} color={colors.textOnDark} /></View>
+          </Pressable>
+          {Platform.OS === 'web' ? <input ref={fileInput} type="file" accept="image/*" onChange={onAvatarFile} style={{ display: 'none' }} /> : null}
+          <Text accessibilityRole="header" style={styles.course}>
+            {native ? LANGUAGES[native].name : ''} → {target ? LANGUAGES[target].name : ''}
           </Text>
         </View>
 
@@ -93,13 +134,74 @@ export default function Profile() {
 
         <Text style={styles.sectionTitle}>{strings.settings}</Text>
 
-        <Pressable style={styles.item} onPress={() => router.push('/onboarding')}>
+        <Text style={styles.settingHint}>Eigene Sprache</Text>
+        <View style={styles.levelChoices}>
+          {Object.values(LANGUAGES).map((language) => (
+            <Pressable key={language.code} accessibilityRole="radio" accessibilityLabel={language.name} accessibilityState={{ selected: native === language.code }} onPress={() => setNativeLanguage(language.code)} style={[styles.levelChip, native === language.code && styles.levelChipActive]}>
+              <Text style={[styles.levelChipText, native === language.code && styles.levelChipTextActive]}>{language.name}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={styles.settingHint}>Lernlevel</Text>
+        <View style={styles.levelChoices}>
+          {SKILL_LEVELS.map((levelOption) => (
+            <Pressable key={levelOption.id} accessibilityRole="radio" accessibilityState={{ selected: skillLevel === levelOption.id }} onPress={() => setSkillLevel(levelOption.id)} style={[styles.levelChip, skillLevel === levelOption.id && styles.levelChipActive]}>
+              <MaterialCommunityIcons name={levelOption.icon} size={18} color={skillLevel === levelOption.id ? colors.blue : colors.textMuted} />
+              <Text style={[styles.levelChipText, skillLevel === levelOption.id && styles.levelChipTextActive]}>{levelOption.name}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={strings.changeCourse}
+          style={styles.item}
+          onPress={() => router.push('/onboarding')}
+        >
           <MaterialCommunityIcons name="swap-horizontal" size={22} color={colors.blue} />
           <Text style={styles.itemText}>{strings.changeCourse}</Text>
           <MaterialCommunityIcons name="chevron-right" size={22} color={colors.lockedText} />
         </Pressable>
 
-        <Pressable style={styles.item} onPress={confirmReset}>
+        <View style={styles.cryptoRow}>
+          <Text style={styles.itemText}>Krypto-Belohnung</Text>
+          <View style={styles.cryptoChoices}>
+            {(['BTC', 'XRP'] as const).map((currency) => (
+              <Pressable
+                key={currency}
+                accessibilityRole="radio"
+                accessibilityLabel={currency === 'BTC' ? 'Bitcoin' : 'XRP'}
+                accessibilityState={{ selected: cryptoCurrency === currency }}
+                onPress={() => setCryptoCurrency(currency)}
+                style={[styles.cryptoChip, cryptoCurrency === currency && styles.cryptoChipActive]}
+              >
+                <Text style={[styles.cryptoText, cryptoCurrency === currency && styles.cryptoTextActive]}>
+                  {currency === 'BTC' ? '₿ BTC' : 'XRP'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityLabel={themeMode === 'dark' ? `${strings.lightMode} aktivieren` : `${strings.darkMode} aktivieren`}
+          accessibilityState={{ checked: themeMode === 'dark' }}
+          style={styles.item}
+          onPress={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+        >
+          <MaterialCommunityIcons name={themeMode === 'dark' ? 'weather-sunny' : 'weather-night'} size={22} color={colors.purple} />
+          <Text style={styles.itemText}>{themeMode === 'dark' ? strings.lightMode : strings.darkMode}</Text>
+          <Text style={styles.modeValue}>{themeMode === 'dark' ? strings.enabled : strings.disabled}</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={strings.resetProgress}
+          style={styles.item}
+          onPress={confirmReset}
+        >
           <MaterialCommunityIcons name="delete-outline" size={22} color={colors.red} />
           <Text style={[styles.itemText, { color: colors.red }]}>{strings.resetProgress}</Text>
         </Pressable>
@@ -130,7 +232,14 @@ function Stat({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
+  content: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.lg,
+  },
   hero: { alignItems: 'center', gap: spacing.md },
   avatar: {
     width: 96,
@@ -140,6 +249,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 48 },
+  avatarEdit: { position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: 15, backgroundColor: colors.purple, borderWidth: 3, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   course: { ...font.h3, color: colors.text },
   levelBox: { gap: spacing.xs },
   levelRow: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -167,7 +278,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
   },
-  goalChipActive: { borderColor: colors.orange, backgroundColor: '#FFF4E0' },
+  goalChipActive: { borderColor: colors.orange, backgroundColor: '#3A2B12' },
   goalText: { ...font.small, color: colors.textMuted },
   goalTextActive: { color: colors.orange },
   item: {
@@ -179,4 +290,17 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   itemText: { ...font.body, color: colors.text, flex: 1 },
+  modeValue: { ...font.small, color: colors.textMuted },
+  cryptoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md },
+  cryptoChoices: { flexDirection: 'row', gap: spacing.sm },
+  cryptoChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 2, borderColor: colors.border, borderRadius: radius.pill },
+  cryptoChipActive: { borderColor: colors.gold, backgroundColor: '#3A2B12' },
+  cryptoText: { ...font.small, color: colors.textMuted },
+  cryptoTextActive: { color: '#FFD166' },
+  settingHint: { ...font.small, color: colors.textMuted },
+  levelChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  levelChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 2, borderColor: colors.border, borderRadius: radius.pill },
+  levelChipActive: { borderColor: colors.blue, backgroundColor: '#102F45' },
+  levelChipText: { ...font.small, color: colors.textMuted },
+  levelChipTextActive: { color: colors.blue },
 });

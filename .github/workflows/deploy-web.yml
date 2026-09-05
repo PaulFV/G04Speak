@@ -31,18 +31,11 @@ jobs:
 
       - run: npm ci
 
-      - name: Web-Paket bauen
-        run: npx expo export --platform web
+      - name: TypeScript prüfen
+        run: npm run typecheck
 
-      - name: Fuer GitHub Pages vorbereiten
-        run: |
-          # Ohne diese Datei ignoriert Pages den Ordner _expo/,
-          # weil er mit einem Unterstrich beginnt.
-          touch dist/.nojekyll
-          # Die App faengt ihre Routen selbst ab. Damit ein direkter Aufruf
-          # einer Unterseite nicht ins Leere laeuft, bekommt Pages dieselbe
-          # Seite auch als Fehlerseite.
-          cp dist/index.html dist/404.html
+      - name: Web-Paket bauen
+        run: npm run build:web
 
       - uses: actions/upload-pages-artifact@v3
         with:

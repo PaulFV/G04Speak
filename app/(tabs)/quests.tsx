@@ -27,7 +27,7 @@ export default function Quests() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>{strings.tabQuests}</Text>
+        <Text accessibilityRole="header" style={styles.title}>{strings.tabQuests}</Text>
         <Text style={styles.subtitle}>{strings.questsDesc}</Text>
       </View>
 
@@ -76,10 +76,17 @@ export default function Quests() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  header: { padding: spacing.lg, gap: spacing.xs },
+  header: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.lg, gap: spacing.xs },
   title: { ...font.h1, color: colors.text },
   subtitle: { ...font.body, color: colors.textMuted },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  list: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
+  },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

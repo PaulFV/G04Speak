@@ -39,7 +39,7 @@ export function BuildCard({ exercise, onChange, locked }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.prompt}>
-        <Text style={styles.promptFlag}>{LANGUAGES[exercise.promptLang].flag}</Text>
+        <Text style={styles.promptLanguage}>{LANGUAGES[exercise.promptLang].name}</Text>
         <Text style={styles.promptText}>{exercise.prompt}</Text>
       </View>
 
@@ -90,7 +90,7 @@ function Tile({ word, onPress }: { word: string; onPress?: () => void }) {
 const styles = StyleSheet.create({
   wrap: { gap: spacing.xl },
   prompt: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  promptFlag: { fontSize: 30 },
+  promptLanguage: { ...font.small, color: colors.blue, minWidth: 86 },
   promptText: { ...font.h3, color: colors.text, flex: 1 },
   line: {
     flexDirection: 'row',

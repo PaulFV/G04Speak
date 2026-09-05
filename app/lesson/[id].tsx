@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -40,7 +42,9 @@ export default function LessonScreen() {
   const gems = useStore((s) => s.gems);
   const stats = useStore((s) => s.stats);
   const loseHeart = useStore((s) => s.loseHeart);
+  const regenerateHearts = useStore((s) => s.regenerateHearts);
   const refillHearts = useStore((s) => s.refillHearts);
+  const claimDailyBonus = useStore((s) => s.claimDailyBonus);
   const finishLesson = useStore((s) => s.finishLesson);
 
   const strings = t(native);
@@ -61,13 +65,33 @@ export default function LessonScreen() {
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [feedbackExercise, setFeedbackExercise] = useState<Exercise | null>(null);
   const [done, setDone] = useState(false);
+  const dancer = useRef(new Animated.Value(0)).current;
 
   const tally = useRef({ correct: 0, total: 0 });
   const answers = useRef<{ termId: string; correct: boolean }[]>([]);
   const reward = useRef({ xpGained: 0, leveledUp: false });
 
   const exercise = queue[index];
+
+  useEffect(() => {
+    const timer = setInterval(regenerateHearts, 1000);
+    return () => clearInterval(timer);
+  }, [regenerateHearts]);
+
+  useEffect(() => {
+    if (!done) return;
+    dancer.setValue(0);
+    Animated.sequence([
+      Animated.timing(dancer, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.sequence([
+        Animated.timing(dancer, { toValue: 0.8, duration: 140, useNativeDriver: true }),
+        Animated.timing(dancer, { toValue: 1, duration: 140, useNativeDriver: true }),
+      ]),
+      Animated.timing(dancer, { toValue: 0, duration: 260, useNativeDriver: true }),
+    ]).start();
+  }, [done, dancer]);
 
   const heading = useMemo(() => {
     if (!exercise) return '';
@@ -114,6 +138,7 @@ export default function LessonScreen() {
   /** Weiter zur naechsten Aufgabe - oder Lektion abschliessen. */
   function advance() {
     setVerdict(null);
+    setFeedbackExercise(null);
     setAnswer('');
 
     if (index + 1 >= queue.length) {
@@ -123,16 +148,19 @@ export default function LessonScreen() {
     setIndex(index + 1);
   }
 
-  function check() {
+  function check(given = answer) {
     if (!exercise || exercise.kind === 'match' || verdict) return;
 
-    const correct = isAnswerCorrect(answer, exercise.answer);
+    const correct = isAnswerCorrect(given, exercise.answer);
+    setFeedbackExercise(exercise);
     record(exercise.termId, correct);
 
     if (correct) {
       hapticSuccess();
       speak(exercise.answer, exercise.answerLang);
       setVerdict('correct');
+      // Nach kurzer Erfolgsanzeige automatisch zur nächsten Aufgabe.
+      setTimeout(() => next(), 900);
       return;
     }
 
@@ -140,16 +168,22 @@ export default function LessonScreen() {
     // erneut geloest werden, bevor die Lektion endet.
     hapticError();
     loseHeart();
-    setQueue((list) => requeue(list, index));
     setVerdict('wrong');
+  }
+
+  function selectOption(value: string) {
+    setAnswer(value);
+    check(value);
   }
 
   function next() {
     if (verdict === 'wrong') {
-      // requeue hat die Aufgabe entfernt, der Index zeigt bereits auf die
-      // naechste - deshalb hier kein Sprung.
+      // Erst nach dem Klick auf „Weiter“ wird die falsche Aufgabe ans Ende
+      // gestellt. Bis dahin bleiben Frage und Lösung unverändert sichtbar.
+      setQueue((list) => requeue(list, index));
       setVerdict(null);
       setAnswer('');
+      setFeedbackExercise(null);
       return;
     }
     advance();
@@ -171,6 +205,10 @@ export default function LessonScreen() {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <View style={styles.summary}>
+          <Animated.View style={[styles.dancerSummary, { transform: [{ translateY: dancer.interpolate({ inputRange: [0, 0.8, 1], outputRange: [22, -8, 0] }) }, { rotate: dancer.interpolate({ inputRange: [0, 0.5, 1], outputRange: ['-10deg', '10deg', '0deg'] }) }, { scale: dancer.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }]}
+          >
+            <Image source={require('../../assets/gospeak-space-mark.png')} style={styles.dancerLarge} />
+          </Animated.View>
           <MaterialCommunityIcons name="trophy" size={96} color={colors.gold} />
           <Text style={styles.summaryTitle}>{strings.complete}</Text>
           <Text style={styles.summarySub}>{strings.goodJob}</Text>
@@ -208,6 +246,13 @@ export default function LessonScreen() {
 
         <View style={styles.footer}>
           <Button
+            label="🎁 Tagesbonus: 50 Krypto"
+            variant="secondary"
+            onPress={() => {
+              if (!claimDailyBonus()) Alert.alert('Tagesbonus', 'Der Tagesbonus wurde heute bereits abgeholt.');
+            }}
+          />
+          <Button
             label={strings.refill}
             variant="secondary"
             disabled={gems < 50}
@@ -236,13 +281,18 @@ export default function LessonScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" onPress={quit} hitSlop={10}>
+        <Pressable
+          accessibilityLabel={strings.endLesson}
+          accessibilityRole="button"
+          onPress={quit}
+          hitSlop={10}
+        >
           <MaterialCommunityIcons name="close" size={28} color={colors.lockedText} />
         </Pressable>
         <View style={styles.headerBar}>
           <ProgressBar value={queue.length ? index / queue.length : 0} />
         </View>
-        <View style={styles.headerHearts}>
+        <View accessibilityLabel={`${strings.hearts}: ${hearts}`} style={styles.headerHearts}>
           <MaterialCommunityIcons name="heart" size={24} color={colors.red} />
           <Text style={styles.heartsText}>{hearts}</Text>
         </View>
@@ -257,13 +307,13 @@ export default function LessonScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.heading}>{heading}</Text>
+          <Text accessibilityRole="header" style={styles.heading}>{heading}</Text>
 
           {exercise.kind === 'choose' || exercise.kind === 'listen' ? (
             <ChooseCard
               exercise={exercise}
               selected={answer || null}
-              onSelect={setAnswer}
+              onSelect={selectOption}
               locked={verdict !== null}
             />
           ) : null}
@@ -297,7 +347,7 @@ export default function LessonScreen() {
             ]}
           >
             {verdict ? (
-              <View style={styles.feedback}>
+              <View accessibilityLiveRegion="polite" style={styles.feedback}>
                 <MaterialCommunityIcons
                   name={verdict === 'correct' ? 'check-circle' : 'close-circle'}
                   size={28}
@@ -314,19 +364,21 @@ export default function LessonScreen() {
                   </Text>
                   {verdict === 'wrong' ? (
                     <Text style={styles.feedbackSolution}>
-                      {strings.solutionIs} {exercise.answer}
+                      {strings.solutionIs} {feedbackExercise && 'answer' in feedbackExercise ? feedbackExercise.answer : exercise.answer}
                     </Text>
                   ) : null}
                 </View>
               </View>
             ) : null}
 
-            <Button
-              label={verdict ? strings.next : strings.check}
-              variant={verdict === 'wrong' ? 'danger' : 'primary'}
-              disabled={!verdict && !canCheck}
-              onPress={verdict ? next : check}
-            />
+            {verdict !== 'correct' && (!['choose', 'listen'].includes(exercise.kind) || verdict) ? (
+              <Button
+                label={verdict ? strings.next : strings.check}
+                variant={verdict === 'wrong' ? 'danger' : 'primary'}
+                disabled={!verdict && !canCheck}
+                onPress={verdict ? next : () => check()}
+              />
+            ) : null}
           </View>
         ) : null}
       </KeyboardAvoidingView>
@@ -344,13 +396,28 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
   },
   headerBar: { flex: 1 },
   headerHearts: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   heartsText: { ...font.h3, color: colors.red },
-  body: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
+  body: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.lg,
+  },
   heading: { ...font.h2, color: colors.text },
+  dancerSummary: { marginBottom: spacing.sm },
+  dancerLarge: { width: 180, height: 180, borderRadius: 90 },
   footer: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
     padding: spacing.lg,
     gap: spacing.md,
     borderTopWidth: 2,
@@ -360,13 +427,16 @@ const styles = StyleSheet.create({
   footerWrong: { backgroundColor: colors.redLight, borderTopColor: 'transparent' },
   feedback: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   feedbackTitle: { ...font.h3 },
-  feedbackSolution: { ...font.small, color: colors.text, marginTop: 2 },
+  feedbackSolution: { ...font.small, color: '#7F1D1D', marginTop: 2, fontWeight: '700' },
   summary: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
     padding: spacing.lg,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
   },
   summaryTitle: { ...font.h1, color: colors.text, textAlign: 'center' },
   summarySub: { ...font.body, color: colors.textMuted, textAlign: 'center' },

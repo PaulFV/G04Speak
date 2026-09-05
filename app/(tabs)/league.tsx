@@ -28,7 +28,10 @@ export default function League() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={[styles.header, { backgroundColor: league.color }]}>
         <MaterialCommunityIcons name="shield-star" size={48} color={colors.textOnDark} />
-        <Text style={styles.leagueName}>{league.name}</Text>
+        <View style={styles.titleRow}>
+          <Text accessibilityRole="header" style={styles.leagueName}>{league.name}</Text>
+          <View style={styles.demoBadge}><Text style={styles.demoText}>DEMO</Text></View>
+        </View>
         <Text style={styles.leagueDesc}>{strings.leagueDesc}</Text>
       </View>
 
@@ -75,7 +78,15 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
   leagueName: { ...font.h1, color: colors.textOnDark },
   leagueDesc: { ...font.small, color: 'rgba(255,255,255,0.9)' },
-  list: { padding: spacing.lg },
+  list: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.lg },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  demoBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  demoText: { fontSize: 10, fontWeight: '800', color: colors.textOnDark, letterSpacing: 0.8 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

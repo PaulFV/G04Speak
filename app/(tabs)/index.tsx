@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Href, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,7 +35,8 @@ export default function LearnPath() {
 
   function open(lesson: Lesson) {
     if (!isUnlocked(lesson, completed)) return;
-    router.push({ pathname: '/lesson/[id]', params: { id: lesson.id } });
+    // Ein direkter Pfad verhindert interne Router-Parameter in der sichtbaren Web-URL.
+    router.push(`/lesson/${lesson.id}` as Href);
   }
 
   return (
@@ -91,6 +92,10 @@ export default function LearnPath() {
                   isReview={lesson.isReview}
                   offset={WAVE[lesson.order % WAVE.length]}
                   label={current?.id === lesson.id ? strings.start : undefined}
+                  accessibilityLabel={`${lesson.isReview ? strings.review : strings.lesson}: ${unit.title[native ?? 'de']}, ${lesson.index}`}
+                  accessibilityHint={
+                    isUnlocked(lesson, completed) ? undefined : strings.lockedHint
+                  }
                   onPress={() => open(lesson)}
                 />
               ))}
@@ -109,6 +114,9 @@ export default function LearnPath() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   goal: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     gap: spacing.xs,
@@ -117,7 +125,12 @@ const styles = StyleSheet.create({
   goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   goalLabel: { ...font.small, color: colors.textMuted, flex: 1 },
   goalValue: { ...font.small, color: colors.orange },
-  path: { paddingBottom: spacing.xxl * 2 },
+  path: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    paddingBottom: spacing.xxl * 2,
+  },
   section: { marginBottom: spacing.lg },
   banner: {
     flexDirection: 'row',

@@ -13,11 +13,23 @@ interface Props {
   /** Waagerechte Verschiebung, die den Pfad schlaengeln laesst. */
   offset: number;
   label?: string;
+  accessibilityLabel: string;
+  accessibilityHint?: string;
   onPress: () => void;
 }
 
 /** Ein Kreis auf dem Lernpfad. */
-export function PathNode({ state, color, icon, isReview, offset, label, onPress }: Props) {
+export function PathNode({
+  state,
+  color,
+  icon,
+  isReview,
+  offset,
+  label,
+  accessibilityLabel,
+  accessibilityHint,
+  onPress,
+}: Props) {
   const locked = state === 'locked';
   const face = locked ? colors.locked : isReview ? colors.gold : color;
   const edge = locked ? colors.borderDark : shade(face);
@@ -32,9 +44,12 @@ export function PathNode({ state, color, icon, isReview, offset, label, onPress 
       ) : null}
 
       <Pressable
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
         accessibilityRole="button"
         accessibilityState={{ disabled: locked }}
-        onPress={onPress}
+        disabled={locked}
+        onPress={locked ? undefined : onPress}
         style={({ pressed }) => [
           styles.node,
           { backgroundColor: face, borderBottomColor: edge },
@@ -66,7 +81,7 @@ function shade(hex: string): string {
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', marginVertical: 10 },
+  wrap: { alignItems: 'center', alignSelf: 'center', width: 72, marginVertical: 10 },
   node: {
     width: 72,
     height: 72,
@@ -78,8 +93,8 @@ const styles = StyleSheet.create({
   pressed: { borderBottomWidth: 0, marginTop: 6 },
   check: {
     position: 'absolute',
-    right: -2,
-    bottom: 4,
+    right: -8,
+    bottom: 2,
     width: 24,
     height: 24,
     borderRadius: 12,

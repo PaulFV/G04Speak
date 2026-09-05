@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MatchExercise } from '../../lib/exercises';
 import { shuffle } from '../../lib/exercises';
 import { speak } from '../../lib/speech';
+import { LANGUAGES } from '../../data/languages';
+import { termById } from '../../data/vocabulary';
 import { colors, font, radius, spacing } from '../../theme/theme';
 
 interface Props {
@@ -75,12 +77,17 @@ export function MatchCard({ exercise, onComplete }: Props) {
         const done = solved.includes(cell.termId);
         const active = picked?.termId === cell.termId && picked.side === cell.side;
         const wrong = wrongPair === cell.termId;
+        // Immer aus dem zentralen Vokabelsatz lesen: so kann ein veralteter
+        // gespeicherter Übungssatz niemals die falsche Sprache anzeigen.
+        const displayText = termById(cell.termId)?.[cell.side === 'left' ? exercise.leftLang : exercise.rightLang] ?? cell.text;
 
         return (
           <Pressable
             key={`${cell.side}-${cell.termId}`}
             accessibilityRole="button"
+            accessibilityLabel={`${LANGUAGES[cell.side === 'left' ? exercise.leftLang : exercise.rightLang].name}: ${displayText}`}
             accessibilityState={{ selected: active, disabled: done }}
+            disabled={done}
             onPress={() => tap(cell)}
             style={[
               styles.cell,
@@ -93,7 +100,7 @@ export function MatchCard({ exercise, onComplete }: Props) {
               style={[styles.cellText, active && styles.cellTextActive, done && styles.cellTextDone]}
               numberOfLines={2}
             >
-              {cell.text}
+              {displayText}
             </Text>
           </Pressable>
         );
@@ -103,14 +110,27 @@ export function MatchCard({ exercise, onComplete }: Props) {
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.labels} accessibilityRole="text">
+        <Text style={styles.columnLabel}>
+          {LANGUAGES[exercise.leftLang].name}
+        </Text>
+        <Text style={styles.columnLabel}>
+          {LANGUAGES[exercise.rightLang].name}
+        </Text>
+      </View>
+      <View style={styles.columns}>
       {column(left)}
       {column(right)}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', gap: spacing.md },
+  wrap: { gap: spacing.sm },
+  columns: { flexDirection: 'row', gap: spacing.md },
+  labels: { flexDirection: 'row', gap: spacing.md },
+  columnLabel: { flex: 1, ...font.small, color: colors.textMuted, textAlign: 'center' },
   column: { flex: 1, gap: spacing.md },
   cell: {
     minHeight: 62,
