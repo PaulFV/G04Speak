@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GoSpeak",
+    "name": "G04Speak",
     "slug": "gospeak",
     "description": "Lerne acht Sprachen kostenlos, spielerisch und ohne Konto.",
     "version": "1.0.0",
@@ -46,7 +46,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "baseUrl": "/GoSpeek"
+      "baseUrl": "/G04Speak"
     }
   }
 }
