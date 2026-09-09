@@ -39,6 +39,28 @@ html = html
     <style>html, body { background-color: #090B3D; }</style>`,
   );
 
+// Der eigentliche Grund fuer die Luecke am unteren Bildschirmrand (Home-
+// Bildschirm-App im Vollbild): Expos eigener Reset (Style-Tag "expo-reset",
+// weiter unten im <head>) setzt html/body/#root auf "height: 100%". In
+// Safaris Standalone-Modus (viewport-fit=cover) ist "100%" aber nicht
+// zuverlaessig gleich der tatsaechlichen Bildschirmhoehe - der Bereich hinter
+// dem Home-Indikator kann dabei verloren gehen, wodurch App-Inhalt UND
+// Tab-Leiste zu kurz geraten und darunter echter, unbemalter Leerraum bleibt
+// (die "Luecke", die durch die Hintergrundfarbe zwar unauffaelliger, aber
+// nicht kleiner wurde). "100dvh" (dynamic viewport height) entspricht der
+// echten sichtbaren Flaeche und behebt das zuverlaessig. Diese Regel muss
+// NACH dem expo-reset-Block stehen, damit sie bei gleicher Spezifitaet
+// gewinnt - deshalb haengen wir sie erst hier, kurz vor "</head>", an.
+html = html.replace(
+  '</head>',
+  `  <style>
+    @supports (height: 100dvh) {
+      html, body, #root { height: 100dvh; }
+    }
+  </style>
+</head>`,
+);
+
 await writeFile(indexUrl, html, 'utf8');
 // GitHub Pages ignoriert sonst _expo/ und braucht fuer direkte SPA-Routen eine Fallback-Seite.
 await writeFile(noJekyllUrl, '', 'utf8');
