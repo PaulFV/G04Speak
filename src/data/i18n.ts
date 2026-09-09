@@ -93,6 +93,13 @@ export interface Strings {
   skillTeacher: string;
   changeAvatar: string;
   avatarWebOnly: string;
+
+  levelQuestion: string;
+  levelHint: string;
+
+  languageHistory: string;
+  currentCourse: string;
+  lessonsShort: string;
 }
 
 export const UI: Record<Lang, Strings> = {
@@ -168,6 +175,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Anfänger', skillAdvanced: 'Fortgeschritten', skillPro: 'Profi', skillTeacher: 'Lehrer',
     changeAvatar: 'Profilbild ändern',
     avatarWebOnly: 'Die Bildauswahl ist aktuell in der Web-Version verfügbar.',
+    levelQuestion: 'Wie gut kennst du diese Sprache schon?',
+    levelHint: 'Fortgeschrittene starten weiter vorne im Kurs statt bei null.',
+    languageHistory: 'Sprachverlauf',
+    currentCourse: 'Aktuell',
+    lessonsShort: 'Lektionen',
   },
   en: {
     tagline: 'Learn 8 languages — free and playful',
@@ -241,6 +253,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Beginner', skillAdvanced: 'Advanced', skillPro: 'Pro', skillTeacher: 'Teacher',
     changeAvatar: 'Change profile picture',
     avatarWebOnly: 'Picture selection is currently only available in the web version.',
+    levelQuestion: 'How well do you already know this language?',
+    levelHint: 'Advanced learners start further into the course instead of from zero.',
+    languageHistory: 'Language history',
+    currentCourse: 'Current',
+    lessonsShort: 'lessons',
   },
   es: {
     tagline: 'Aprende 8 idiomas — gratis y jugando',
@@ -314,6 +331,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Principiante', skillAdvanced: 'Avanzado', skillPro: 'Profesional', skillTeacher: 'Profesor',
     changeAvatar: 'Cambiar foto de perfil',
     avatarWebOnly: 'La selección de foto solo está disponible en la versión web por ahora.',
+    levelQuestion: '¿Qué tan bien conoces ya este idioma?',
+    levelHint: 'Los usuarios avanzados empiezan más adelante en el curso, no desde cero.',
+    languageHistory: 'Historial de idiomas',
+    currentCourse: 'Actual',
+    lessonsShort: 'lecciones',
   },
   ro: {
     tagline: 'Învață 8 limbi — gratuit și cu joacă',
@@ -387,6 +409,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Începător', skillAdvanced: 'Avansat', skillPro: 'Profesionist', skillTeacher: 'Profesor',
     changeAvatar: 'Schimbă poza de profil',
     avatarWebOnly: 'Selectarea imaginii este momentan disponibilă doar în versiunea web.',
+    levelQuestion: 'Cât de bine cunoști deja această limbă?',
+    levelHint: 'Cei avansați încep mai departe în curs, nu de la zero.',
+    languageHistory: 'Istoricul limbilor',
+    currentCourse: 'Curent',
+    lessonsShort: 'lecții',
   },
   ru: {
     tagline: 'Учите 8 языков — бесплатно и с удовольствием',
@@ -460,6 +487,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Начинающий', skillAdvanced: 'Продвинутый', skillPro: 'Профи', skillTeacher: 'Учитель',
     changeAvatar: 'Изменить фото профиля',
     avatarWebOnly: 'Выбор фото пока доступен только в веб-версии.',
+    levelQuestion: 'Как хорошо ты уже знаешь этот язык?',
+    levelHint: 'Продвинутые ученики начинают дальше в курсе, а не с нуля.',
+    languageHistory: 'История языков',
+    currentCourse: 'Текущий',
+    lessonsShort: 'уроков',
   },
   tr: {
     tagline: '8 dil öğren — ücretsiz ve eğlenceli',
@@ -533,6 +565,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Başlangıç', skillAdvanced: 'İleri', skillPro: 'Profesyonel', skillTeacher: 'Öğretmen',
     changeAvatar: 'Profil resmini değiştir',
     avatarWebOnly: 'Resim seçimi şu anda yalnızca web sürümünde kullanılabilir.',
+    levelQuestion: 'Bu dili şu anda ne kadar iyi biliyorsun?',
+    levelHint: 'İleri seviye öğrenciler kursta sıfırdan değil, daha ileriden başlar.',
+    languageHistory: 'Dil geçmişi',
+    currentCourse: 'Güncel',
+    lessonsShort: 'ders',
   },
   hu: {
     tagline: 'Tanulj 8 nyelvet — ingyen és játékosan',
@@ -606,6 +643,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Kezdő', skillAdvanced: 'Haladó', skillPro: 'Profi', skillTeacher: 'Tanár',
     changeAvatar: 'Profilkép módosítása',
     avatarWebOnly: 'A képválasztás jelenleg csak a webes verzióban érhető el.',
+    levelQuestion: 'Mennyire ismered már ezt a nyelvet?',
+    levelHint: 'A haladók nem a legelejétől, hanem a kurzus egy későbbi pontjától kezdenek.',
+    languageHistory: 'Nyelvi előzmények',
+    currentCourse: 'Aktuális',
+    lessonsShort: 'lecke',
   },
   pl: {
     tagline: 'Ucz się 8 języków — za darmo i z zabawą',
@@ -679,6 +721,11 @@ export const UI: Record<Lang, Strings> = {
     skillBeginner: 'Początkujący', skillAdvanced: 'Zaawansowany', skillPro: 'Profesjonalista', skillTeacher: 'Nauczyciel',
     changeAvatar: 'Zmień zdjęcie profilowe',
     avatarWebOnly: 'Wybór zdjęcia jest obecnie dostępny tylko w wersji internetowej.',
+    levelQuestion: 'Jak dobrze znasz już ten język?',
+    levelHint: 'Zaawansowani zaczynają dalej w kursie, a nie od zera.',
+    languageHistory: 'Historia języków',
+    currentCourse: 'Aktualny',
+    lessonsShort: 'lekcji',
   },
 };
 
