@@ -33,7 +33,10 @@ html = html
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="GoSpeak" />`,
+    <meta name="apple-mobile-web-app-title" content="GoSpeak" />
+    <!-- Dunkler Hintergrund fuer den Bereich hinter Notch/Home-Indikator, bevor die
+         App-JS geladen ist - sonst blitzt dort kurz Browser-Weiss durch. -->
+    <style>html, body { background-color: #090B3D; }</style>`,
   );
 
 await writeFile(indexUrl, html, 'utf8');
