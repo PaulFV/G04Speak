@@ -8,7 +8,7 @@ const noJekyllUrl = new URL('.nojekyll', distUrl);
 let html = await readFile(indexUrl, 'utf8');
 
 // Der von Expo erzeugte Titel richtet sich nach app.json ("G04Speak", dem
-// internen Projektnamen) - nicht nach dem Markennamen "GoSpeak". Ein fest
+// internen Projektnamen) - nicht nach dem Markennamen "G04Speak". Ein fest
 // verdrahteter Suchtext ("<title>GoSpeak</title>") traf deshalb nie zu und
 // liess Titel, Meta-Beschreibung und Open-Graph-Tags stillschweigend weg.
 // Ein Regex-Ersatz auf den tatsaechlichen Titel behebt das zuverlaessig.
@@ -22,10 +22,10 @@ html = html
   )
   .replace(
     /<title>[^<]*<\/title>/,
-    `<title>GoSpeak – Sprachen spielerisch lernen</title>
+    `<title>G04Speak – Sprachen spielerisch lernen</title>
     <meta name="description" content="Lerne acht Sprachen kostenlos, spielerisch und ohne Konto. Dein Fortschritt bleibt lokal auf deinem Gerät." />
     <meta name="theme-color" content="#090B3D" />
-    <meta property="og:title" content="GoSpeak – Sprachen spielerisch lernen" />
+    <meta property="og:title" content="G04Speak – Sprachen spielerisch lernen" />
     <meta property="og:description" content="56 Sprachkurse, kurze Übungen und privater Lernfortschritt – kostenlos im Browser ausprobieren." />
     <!-- "Zum Home-Bildschirm hinzufuegen" oeffnet die App dann ohne Browser-Leiste, im Vollbild. -->
     <link rel="manifest" href="/G04Speak/manifest.webmanifest" />
@@ -33,7 +33,7 @@ html = html
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="GoSpeak" />
+    <meta name="apple-mobile-web-app-title" content="G04Speak" />
     <!-- Dunkler Hintergrund fuer den Bereich hinter Notch/Home-Indikator, bevor die
          App-JS geladen ist - sonst blitzt dort kurz Browser-Weiss durch. -->
     <style>html, body { background-color: #090B3D; }</style>`,
