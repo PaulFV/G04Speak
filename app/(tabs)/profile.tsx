@@ -7,9 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressBar } from '../../src/components/ProgressBar';
 import { Strings, t } from '../../src/data/i18n';
-import { LANGUAGES } from '../../src/data/languages';
+import { Lang, LANGUAGES } from '../../src/data/languages';
 import { TERMS } from '../../src/data/vocabulary';
-import { DailyGoal, SkillLevel, levelFromXp, useStore, xpIntoLevel } from '../../src/store/useStore';
+import { ALL_LESSONS } from '../../src/lib/course';
+import { CourseProgress, DailyGoal, SkillLevel, courseKey, levelFromXp, useStore, xpIntoLevel } from '../../src/store/useStore';
 import { ThemeColors, font, radius, spacing, useThemeColors } from '../../src/theme/theme';
 
 const GOALS: DailyGoal[] = [10, 20, 30, 50];
@@ -49,6 +50,9 @@ export default function Profile() {
   const soundEnabled = useStore((s) => s.soundEnabled);
   const setSoundEnabled = useStore((s) => s.setSoundEnabled);
   const setNativeLanguage = useStore((s) => s.setNativeLanguage);
+  const setCourse = useStore((s) => s.setCourse);
+  const completedMap = useStore((s) => s.completed);
+  const progressByCourse = useStore((s) => s.progressByCourse);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -78,6 +82,35 @@ export default function Profile() {
   }
 
   const level = levelFromXp(xp);
+
+  // Uebersicht ueber alle Sprachen, die je gestartet wurden - der aktuell
+  // aktive Kurs liegt bis zum naechsten Sprachwechsel noch nicht in
+  // progressByCourse, deshalb wird er hier zusaetzlich eingemischt.
+  const totalLessons = ALL_LESSONS.length;
+  const activeKey = native && target ? courseKey(native, target) : null;
+  const historyEntries = useMemo(() => {
+    const merged: Record<string, CourseProgress> = { ...progressByCourse };
+    if (activeKey && native && target) {
+      merged[activeKey] = {
+        completed: completedMap,
+        stats: {},
+        startOrder: 0,
+        level: skillLevel ?? 'beginner',
+      };
+    }
+    return Object.keys(merged)
+      .map((key) => {
+        const [entryNative, entryTarget] = key.split('-') as [Lang, Lang];
+        return {
+          key,
+          native: entryNative,
+          target: entryTarget,
+          done: Object.keys(merged[key].completed).length,
+          isCurrent: key === activeKey,
+        };
+      })
+      .sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent) || b.done - a.done);
+  }, [progressByCourse, completedMap, activeKey, native, target, skillLevel]);
 
   function confirmReset() {
     Alert.alert(strings.resetProgress, strings.resetDesc, [
@@ -177,6 +210,41 @@ export default function Profile() {
           <Text style={styles.itemText}>{strings.changeCourse}</Text>
           <MaterialCommunityIcons name="chevron-right" size={22} color={colors.lockedText} />
         </Pressable>
+
+        {historyEntries.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>{strings.languageHistory}</Text>
+            <View style={styles.historyList}>
+              {historyEntries.map((entry) => (
+                <Pressable
+                  key={entry.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${LANGUAGES[entry.native].name} → ${LANGUAGES[entry.target].name}: ${entry.done}/${totalLessons} ${strings.lessonsShort}`}
+                  disabled={entry.isCurrent}
+                  onPress={() => setCourse(entry.native, entry.target)}
+                  style={[styles.historyItem, entry.isCurrent && styles.historyItemActive]}
+                >
+                  <View style={styles.historyRow}>
+                    <Text style={styles.historyText}>
+                      {LANGUAGES[entry.native].name} → {LANGUAGES[entry.target].name}
+                    </Text>
+                    {entry.isCurrent ? (
+                      <View style={styles.historyBadge}>
+                        <Text style={styles.historyBadgeText}>{strings.currentCourse}</Text>
+                      </View>
+                    ) : (
+                      <MaterialCommunityIcons name="chevron-right" size={18} color={colors.lockedText} />
+                    )}
+                  </View>
+                  <ProgressBar value={entry.done / totalLessons} height={8} />
+                  <Text style={styles.historyCount}>
+                    {entry.done}/{totalLessons} {strings.lessonsShort}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        ) : null}
 
         <Pressable
           accessibilityRole="switch"
@@ -302,6 +370,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   itemText: { ...font.body, color: colors.text, flex: 1 },
   modeValue: { ...font.small, color: colors.textMuted },
+  historyList: { gap: spacing.sm },
+  historyItem: {
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+  },
+  historyItemActive: { borderColor: colors.blue, backgroundColor: '#102F45' },
+  historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  historyText: { ...font.body, color: colors.text },
+  historyCount: { ...font.small, color: colors.textMuted },
+  historyBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.blue },
+  historyBadgeText: { ...font.small, color: colors.textOnDark },
   settingHint: { ...font.small, color: colors.textMuted },
   levelChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   levelChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 2, borderColor: colors.border, borderRadius: radius.pill },
