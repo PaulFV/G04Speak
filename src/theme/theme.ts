@@ -1,5 +1,16 @@
-/** Farb- und Abstandssystem der App. */
-export const colors = {
+import { useStore } from '../store/useStore';
+
+/**
+ * Farb- und Abstandssystem der App.
+ *
+ * Es gibt zwei Paletten: `darkColors` ist das bisherige, dunkle
+ * Erscheinungsbild (weiterhin die Vorgabe fuer bestehende Installationen),
+ * `lightColors` eine echte helle Variante fuer den Umschalter im Profil.
+ * Komponenten sollten nicht direkt importieren, sondern den Hook
+ * `useThemeColors()` unten verwenden, damit der Umschalter tatsaechlich
+ * etwas bewirkt.
+ */
+export const darkColors = {
   green: '#42D95A',
   greenDark: '#21A83B',
   greenLight: '#D9FFE1',
@@ -24,25 +35,33 @@ export const colors = {
   lockedText: '#7C86A7',
 } as const;
 
-/** Dunkle Palette für kontrastreiches Lernen bei wenig Umgebungslicht. */
-export const darkColors = {
-  ...colors,
-  text: '#F7F7FF',
-  textMuted: '#B8B5D0',
-  bg: '#111229',
-  bgAlt: '#1C1D3A',
-  border: '#37385C',
-  borderDark: '#50517A',
-  locked: '#292A49',
-  lockedText: '#8886A8',
-  greenLight: '#173B27',
-  redLight: '#4A2028',
+/** Helle Palette - dieselben Akzentfarben, aber ein heller Hintergrund und dunkler Text. */
+export const lightColors = {
+  ...darkColors,
+  greenLight: '#EAFBEE',
+  redLight: '#FFF1F1',
+
+  text: '#111827',
+  textMuted: '#6B7280',
+
+  bg: '#FFFFFF',
+  bgAlt: '#F4F5F9',
+  border: '#E3E5EF',
+  borderDark: '#CBD0E0',
+  locked: '#EEF0F6',
+  lockedText: '#9AA1B8',
 } as const;
 
-export type ThemeColors = { [K in keyof typeof colors]: string };
+export type ThemeColors = { [K in keyof typeof darkColors]: string };
 export type ThemeMode = 'light' | 'dark';
 export function getColors(mode: ThemeMode): ThemeColors {
-  return mode === 'dark' ? darkColors : colors;
+  return mode === 'dark' ? darkColors : lightColors;
+}
+
+/** Liefert die Farben passend zum im Store gewaehlten Modus. Reaktiv: aendert sich der Modus, rendert die Komponente neu. */
+export function useThemeColors(): ThemeColors {
+  const mode = useStore((s) => s.themeMode);
+  return getColors(mode);
 }
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 24, pill: 999 } as const;

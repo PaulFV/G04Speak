@@ -2,14 +2,20 @@ import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
 
 import { LANGUAGES, Lang } from '../data/languages';
+import { useStore } from '../store/useStore';
 
 /**
  * Sprachausgabe ueber die Stimmen des Betriebssystems.
  *
  * Nicht jedes Geraet hat fuer jede der acht Sprachen eine Stimme installiert.
- * Fehlt sie, bleibt es still - die Uebung selbst funktioniert weiter.
+ * Fehlt sie, bleibt es still - die Uebung selbst funktioniert weiter. Ist der
+ * Ton in den Einstellungen ausgeschaltet (z. B. im Ruheraum), bleibt sie
+ * ebenso still - dafuer duerfen Lektionen dann keine Hoeraufgaben enthalten,
+ * siehe buildLesson() in exercises.ts.
  */
 export function speak(text: string, lang: Lang) {
+  if (!useStore.getState().soundEnabled) return;
+
   // Web Speech API ist im Browser zuverlässiger als der native Expo-Adapter.
   if (Platform.OS === 'web' && typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined') {
     const synth = window.speechSynthesis;

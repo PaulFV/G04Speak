@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LANGUAGES } from '../../data/languages';
 import { BuildExercise } from '../../lib/exercises';
-import { colors, font, radius, spacing } from '../../theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../theme/theme';
 
 interface Props {
   exercise: BuildExercise;
@@ -19,6 +19,8 @@ interface Tile {
 
 /** Satzbau aus Wort-Kacheln: unten der Vorrat, oben die gebaute Zeile. */
 export function BuildCard({ exercise, onChange, locked }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [bank, setBank] = useState<Tile[]>([]);
   const [line, setLine] = useState<Tile[]>([]);
 
@@ -48,6 +50,7 @@ export function BuildCard({ exercise, onChange, locked }: Props) {
           <Tile
             key={tile.id}
             word={tile.word}
+            styles={styles}
             onPress={
               locked
                 ? undefined
@@ -63,6 +66,7 @@ export function BuildCard({ exercise, onChange, locked }: Props) {
           <Tile
             key={tile.id}
             word={tile.word}
+            styles={styles}
             onPress={
               locked
                 ? undefined
@@ -75,7 +79,9 @@ export function BuildCard({ exercise, onChange, locked }: Props) {
   );
 }
 
-function Tile({ word, onPress }: { word: string; onPress?: () => void }) {
+type Styles = ReturnType<typeof createStyles>;
+
+function Tile({ word, onPress, styles }: { word: string; onPress?: () => void; styles: Styles }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -87,7 +93,7 @@ function Tile({ word, onPress }: { word: string; onPress?: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: { gap: spacing.xl },
   prompt: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   promptLanguage: { ...font.small, color: colors.blue, minWidth: 86 },

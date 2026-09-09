@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radius } from '../theme/theme';
+import { radius, useThemeColors } from '../theme/theme';
 
 interface Props {
   /** Wert zwischen 0 und 1 */
@@ -9,15 +9,17 @@ interface Props {
   height?: number;
 }
 
-export function ProgressBar({ value, color = colors.green, height = 16 }: Props) {
+export function ProgressBar({ value, color, height = 16 }: Props) {
+  const colors = useThemeColors();
   const clamped = Math.max(0, Math.min(1, value));
+  const fillColor = color ?? colors.green;
 
   return (
-    <View style={[styles.track, { height, borderRadius: height / 2 }]}>
+    <View style={[styles.track, { height, borderRadius: height / 2, backgroundColor: colors.border }]}>
       <View
         style={[
           styles.fill,
-          { width: `${clamped * 100}%`, backgroundColor: color, borderRadius: height / 2 },
+          { width: `${clamped * 100}%`, backgroundColor: fillColor, borderRadius: height / 2 },
         ]}
       >
         {clamped > 0.08 && <View style={styles.shine} />}
@@ -29,7 +31,6 @@ export function ProgressBar({ value, color = colors.green, height = 16 }: Props)
 const styles = StyleSheet.create({
   track: {
     width: '100%',
-    backgroundColor: colors.border,
     overflow: 'hidden',
   },
   fill: {

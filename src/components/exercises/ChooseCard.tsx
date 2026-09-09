@@ -1,10 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LANGUAGES } from '../../data/languages';
 import { ChooseExercise, ListenExercise } from '../../lib/exercises';
 import { speak } from '../../lib/speech';
-import { colors, font, radius, spacing } from '../../theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../theme/theme';
 
 interface Props {
   exercise: ChooseExercise | ListenExercise;
@@ -18,6 +19,8 @@ interface Props {
  * Bei der Hoeraufgabe steht statt des Textes ein Lautsprecher.
  */
 export function ChooseCard({ exercise, selected, onSelect, locked }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isListening = exercise.kind === 'listen';
 
   return (
@@ -62,7 +65,7 @@ export function ChooseCard({ exercise, selected, onSelect, locked }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: { gap: spacing.xl },
   prompt: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   promptLanguage: { ...font.small, color: colors.blue, minWidth: 86 },

@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { LANGUAGES } from '../../data/languages';
 import { TypeExercise } from '../../lib/exercises';
 import { speak } from '../../lib/speech';
-import { colors, font, radius, spacing } from '../../theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../theme/theme';
 
 interface Props {
   exercise: TypeExercise;
@@ -15,6 +15,8 @@ interface Props {
 
 /** Freie Eingabe - der schwerste Aufgabentyp. */
 export function TypeCard({ exercise, onChange, locked }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [value, setValue] = useState('');
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export function TypeCard({ exercise, onChange, locked }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: { gap: spacing.xl },
   prompt: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   promptLanguage: { ...font.small, color: colors.blue, minWidth: 86 },

@@ -68,16 +68,42 @@ export function unitById(id: string): UnitInfo | undefined {
   return UNITS.find((u) => u.id === id);
 }
 
-/** Die erste noch nicht abgeschlossene Lektion. */
-export function nextLesson(completed: Record<string, number>): Lesson | undefined {
-  return ALL_LESSONS.find((l) => !completed[l.id]);
+/**
+ * Die erste noch nicht abgeschlossene Lektion.
+ *
+ * Ab `startOrder` (siehe startOrderForSkillLevel) gilt eine Lektion auch ohne
+ * Abschluss der vorherigen als Einstiegspunkt - so muss sich eine
+ * fortgeschrittene Person nicht erst durch die Anfaengerlektionen klicken.
+ */
+export function nextLesson(completed: Record<string, number>, startOrder = 0): Lesson | undefined {
+  return (
+    ALL_LESSONS.find((l) => l.order >= startOrder && !completed[l.id]) ??
+    ALL_LESSONS.find((l) => !completed[l.id])
+  );
 }
 
-/** Eine Lektion ist offen, wenn alle vorherigen erledigt sind. */
-export function isUnlocked(lesson: Lesson, completed: Record<string, number>): boolean {
-  if (lesson.order === 0) return true;
+/**
+ * Eine Lektion ist offen, wenn alle vorherigen erledigt sind - oder wenn sie
+ * innerhalb des Einstiegsbereichs `startOrder` liegt, der sich aus dem
+ * gewaehlten Lernlevel ergibt (siehe startOrderForSkillLevel).
+ */
+export function isUnlocked(lesson: Lesson, completed: Record<string, number>, startOrder = 0): boolean {
+  if (lesson.order === 0 || lesson.order <= startOrder) return true;
   const previous = ALL_LESSONS[lesson.order - 1];
   return Boolean(completed[previous.id]);
+}
+
+/**
+ * Ab welcher Position im Lernpfad eine neue Sprache je nach Lernlevel
+ * beginnt. Eine "fortgeschrittene" oder "Profi"-Person soll nicht wie ein
+ * kompletter Anfaenger bei Lektion 1 starten, sondern direkt einen Teil des
+ * Pfads offen vorfinden. Der Anteil bezieht sich auf die Gesamtlaenge des
+ * (fuer alle Sprachpaare identischen) Pfads.
+ */
+export function startOrderForSkillLevel(skillLevel: string | null | undefined): number {
+  const total = ALL_LESSONS.length;
+  const fraction = skillLevel === 'teacher' ? 0.55 : skillLevel === 'pro' ? 0.35 : skillLevel === 'advanced' ? 0.15 : 0;
+  return Math.floor(total * fraction);
 }
 
 export function courseTitle(unit: UnitInfo, lang: Lang): string {

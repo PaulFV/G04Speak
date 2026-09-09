@@ -3,26 +3,46 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { Lang } from '../data/languages';
+import { startOrderForSkillLevel } from '../lib/course';
 import { TermStat, advance, isLearned } from '../lib/srs';
 
 export const MAX_HEARTS = 5;
-/** Ein Herz erholt sich alle 1 Minute von selbst. */
-export const HEART_REGEN_MS = 60 * 1000;
+/** Ein Herz erholt sich alle 30 Minuten von selbst. */
+export const HEART_REGEN_MS = 30 * 60 * 1000;
 export const REFILL_COST = 50;
 export const XP_PER_LESSON = 10;
 export const XP_PERFECT_BONUS = 5;
 
 export type DailyGoal = 10 | 20 | 30 | 50;
 export type ThemeMode = 'light' | 'dark';
-export type CryptoCurrency = 'BTC' | 'XRP';
 export type SkillLevel = 'beginner' | 'advanced' | 'pro' | 'teacher';
 
+/**
+ * Kalendertag in der lokalen Zeitzone des Geraets (nicht UTC) - sonst kann
+ * die Tagesserie fuer Nutzer westlich/oestlich von UTC um Mitternacht falsch
+ * kippen.
+ */
 function dayKey(date = new Date()): string {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+}
+
+/** Fortschritt eines einzelnen Sprachpaars (Muttersprache -> Lernsprache). */
+export interface CourseProgress {
+  completed: Record<string, number>;
+  stats: Record<string, TermStat>;
+  /** Einstiegspunkt im Lernpfad, festgelegt beim ersten Start dieses Sprachpaars. */
+  startOrder: number;
+}
+
+function courseKey(native: Lang, target: Lang): string {
+  return `${native}-${target}`;
 }
 
 /** Level 1 bei 0 XP, danach jeweils 100 XP pro Stufe. */
@@ -47,7 +67,7 @@ interface State {
   native: Lang | null;
   target: Lang | null;
   themeMode: ThemeMode;
-  cryptoCurrency: CryptoCurrency;
+  soundEnabled: boolean;
   skillLevel: SkillLevel | null;
 
   xp: number;
@@ -66,12 +86,16 @@ interface State {
 
   completed: Record<string, number>;
   stats: Record<string, TermStat>;
+  /** Einstiegspunkt im Lernpfad des aktuell aktiven Sprachpaars. */
+  courseStartOrder: number;
+  /** Fortschritt je Sprachpaar, damit ein Sprachwechsel nicht ueberschreibt. */
+  progressByCourse: Record<string, CourseProgress>;
   unlockedAchievements: string[];
 
   setCourse: (native: Lang, target: Lang) => void;
   setNativeLanguage: (native: Lang) => void;
   setThemeMode: (themeMode: ThemeMode) => void;
-  setCryptoCurrency: (cryptoCurrency: CryptoCurrency) => void;
+  setSoundEnabled: (soundEnabled: boolean) => void;
   setSkillLevel: (skillLevel: SkillLevel) => void;
   setDailyGoal: (goal: DailyGoal) => void;
   regenerateHearts: () => void;
@@ -88,8 +112,10 @@ const initial = {
   hydrated: false,
   native: null as Lang | null,
   target: null as Lang | null,
-  themeMode: 'light' as ThemeMode,
-  cryptoCurrency: 'BTC' as CryptoCurrency,
+  // Bisheriges Erscheinungsbild der App als Standard - "hell" gibt es erst
+  // seit der echten Umsetzung des Umschalters unten.
+  themeMode: 'dark' as ThemeMode,
+  soundEnabled: true,
   skillLevel: null as SkillLevel | null,
   xp: 0,
   gems: 100,
@@ -104,6 +130,8 @@ const initial = {
   lastBonusDay: null as string | null,
   completed: {} as Record<string, number>,
   stats: {} as Record<string, TermStat>,
+  courseStartOrder: 0,
+  progressByCourse: {} as Record<string, CourseProgress>,
   unlockedAchievements: [] as string[],
 };
 
@@ -114,27 +142,67 @@ export const useStore = create<State>()(
 
       // Muttersprache und Lernsprache muessen sich unterscheiden - sonst
       // stuenden in jeder Uebung auf beiden Seiten dieselben Woerter.
+      //
+      // Jedes Sprachpaar behaelt seinen eigenen Fortschritt: Beim Verlassen
+      // eines Kurses wird er in progressByCourse abgelegt, beim (Wieder-)
+      // Betreten eines Kurses wieder geladen. Ein noch nie gelernter Kurs
+      // startet - je nach gewaehltem Lernlevel - nicht zwingend bei Lektion 1
+      // (siehe startOrderForSkillLevel).
       setCourse: (native, target) => {
         if (native === target) return;
-        set({ native, target });
+        const state = get();
+
+        const progressByCourse = { ...state.progressByCourse };
+        if (state.native && state.target) {
+          progressByCourse[courseKey(state.native, state.target)] = {
+            completed: state.completed,
+            stats: state.stats,
+            startOrder: state.courseStartOrder,
+          };
+        }
+
+        const key = courseKey(native, target);
+        const existing = progressByCourse[key];
+        const courseProgress: CourseProgress = existing ?? {
+          completed: {},
+          stats: {},
+          startOrder: startOrderForSkillLevel(state.skillLevel),
+        };
+        progressByCourse[key] = courseProgress;
+
+        set({
+          native,
+          target,
+          progressByCourse,
+          completed: courseProgress.completed,
+          stats: courseProgress.stats,
+          courseStartOrder: courseProgress.startOrder,
+        });
       },
       setNativeLanguage: (native) => {
         const { target } = get();
-        set({ native, target: target === native ? null : target });
+        if (target && target !== native) {
+          // Sprachpaar aendert sich (andere Muttersprache, gleiche Lernsprache)
+          // - ueber setCourse laufen lassen, damit der Fortschritt je Paar
+          // erhalten bleibt.
+          get().setCourse(native, target);
+          return;
+        }
+        set({ native, target: null, completed: {}, stats: {}, courseStartOrder: 0 });
       },
 
       setThemeMode: (themeMode) => set({ themeMode }),
-      setCryptoCurrency: (cryptoCurrency) => set({ cryptoCurrency }),
+      setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
       setSkillLevel: (skillLevel) => set({ skillLevel }),
 
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
 
       regenerateHearts: () => {
         const { hearts, heartsUpdatedAt } = get();
-        if (hearts >= MAX_HEARTS) {
-          set({ heartsUpdatedAt: Date.now() });
-          return;
-        }
+        // Nichts zu tun (und nichts zu speichern), solange die Herzen voll
+        // sind - loseHeart() setzt heartsUpdatedAt selbst neu, sobald ein
+        // Herz aus vollem Bestand verloren geht.
+        if (hearts >= MAX_HEARTS) return;
         const elapsed = Date.now() - heartsUpdatedAt;
         const recovered = Math.floor(elapsed / HEART_REGEN_MS);
         if (recovered <= 0) return;

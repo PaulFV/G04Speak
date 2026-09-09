@@ -83,10 +83,6 @@ export function shuffle<T>(items: T[]): T[] {
   return out;
 }
 
-function pick<T>(items: T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
-}
-
 /**
  * Falsche Antwortmoeglichkeiten. Begriffe aus derselben Einheit sind
  * schwieriger und deshalb bevorzugt; identische Wortlaute fallen raus,
@@ -185,13 +181,32 @@ export interface BuildLessonOptions {
   /** Faellige Begriffe aus frueheren Lektionen, die mit eingestreut werden. */
   reviewTermIds?: string[];
   skillLevel?: SkillLevel | null;
+  /** Bei ausgeschaltetem Ton (z. B. im Ruheraum) faellt die Hoeraufgabe weg. */
+  soundEnabled?: boolean;
+}
+
+/**
+ * Welchen zweiten Aufgabentyp ein Begriff (kein Satz) neben der
+ * Erkennungsaufgabe bekommt. Je hoeher das Lernlevel, desto seltener die
+ * leichte Mehrfachauswahl und desto haeufiger die schwereren Typen
+ * (Satzbau, Hoerverstehen) - eine fortgeschrittene Person soll nicht mit
+ * denselben leichten Aufgaben wie ein Anfaenger starten.
+ */
+function secondExerciseKind(skillLevel: SkillLevel, soundEnabled: boolean): 'build' | 'listen' | 'choose' {
+  const r = Math.random();
+  const listenChance = skillLevel === 'beginner' ? 0.5 : skillLevel === 'advanced' ? 0.35 : 0.25;
+  const buildChance = skillLevel === 'beginner' ? 0 : skillLevel === 'advanced' ? 0.3 : 0.5;
+
+  if (soundEnabled && r < listenChance) return 'listen';
+  if (r < listenChance + buildChance) return 'build';
+  return 'choose';
 }
 
 /**
  * Setzt eine Lektion zusammen: ein Zuordnungsspiel zum Aufwaermen, danach
  * gemischte Aufgabentypen, am Ende die schwereren Frei-Eingaben.
  */
-export function buildLesson({ lesson, native, target, reviewTermIds = [], skillLevel = 'beginner' }: BuildLessonOptions): Exercise[] {
+export function buildLesson({ lesson, native, target, reviewTermIds = [], skillLevel = 'beginner', soundEnabled = true }: BuildLessonOptions): Exercise[] {
   const lessonTerms = lesson.termIds
     .map(termById)
     // Manche Woerter sind in zwei Sprachen gleich geschrieben ("verde" im
@@ -200,6 +215,8 @@ export function buildLesson({ lesson, native, target, reviewTermIds = [], skillL
     .filter((t): t is Term => t !== undefined && t[native] !== t[target]);
 
   if (lessonTerms.length === 0) return [];
+
+  const level: SkillLevel = skillLevel ?? 'beginner';
 
   const reviewTerms = reviewTermIds
     .map(termById)
@@ -221,23 +238,28 @@ export function buildLesson({ lesson, native, target, reviewTermIds = [], skillL
 
     if (term.kind === 'phrase') {
       exercises.push(buildEx(term, native, target, nextKey()));
-    } else if (Math.random() < 0.5) {
-      exercises.push(listenEx(term, target, nextKey()));
     } else {
-      exercises.push(chooseEx(term, target, native, nextKey()));
+      const kind = secondExerciseKind(level, soundEnabled);
+      if (kind === 'listen') exercises.push(listenEx(term, target, nextKey()));
+      else if (kind === 'build') exercises.push(buildEx(term, native, target, nextKey()));
+      else exercises.push(chooseEx(term, target, native, nextKey()));
     }
   }
 
   // Wiederholungen aus dem Langzeitgedaechtnis.
   for (const term of reviewTerms) {
-    exercises.push(pick([
-      () => chooseEx(term, target, native, nextKey()),
-      () => listenEx(term, target, nextKey()),
-    ])());
+    const kind = secondExerciseKind(level, soundEnabled);
+    exercises.push(
+      kind === 'listen'
+        ? listenEx(term, target, nextKey())
+        : kind === 'build'
+          ? buildEx(term, native, target, nextKey())
+          : chooseEx(term, target, native, nextKey()),
+    );
   }
 
   // Freie Eingaben sind der schwerste Aufgabentyp und richten sich nach dem Level.
-  const typeCount = skillLevel === 'beginner' ? 0 : skillLevel === 'advanced' ? 1 : 3;
+  const typeCount = level === 'beginner' ? 0 : level === 'advanced' ? 1 : level === 'pro' ? 3 : lessonTerms.length;
   for (const term of shuffle(lessonTerms).slice(0, typeCount)) {
     exercises.push(typeEx(term, native, target, nextKey()));
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MatchExercise } from '../../lib/exercises';
@@ -6,7 +6,7 @@ import { shuffle } from '../../lib/exercises';
 import { speak } from '../../lib/speech';
 import { LANGUAGES } from '../../data/languages';
 import { termById } from '../../data/vocabulary';
-import { colors, font, radius, spacing } from '../../theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../theme/theme';
 
 interface Props {
   exercise: MatchExercise;
@@ -26,6 +26,8 @@ interface Cell {
  * Lernsprache. Es gibt keinen Pruefen-Knopf, die Runde laeuft von selbst.
  */
 export function MatchCard({ exercise, onComplete }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [left, setLeft] = useState<Cell[]>([]);
   const [right, setRight] = useState<Cell[]>([]);
   const [picked, setPicked] = useState<Cell | null>(null);
@@ -126,7 +128,7 @@ export function MatchCard({ exercise, onComplete }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: { gap: spacing.sm },
   columns: { flexDirection: 'row', gap: spacing.md },
   labels: { flexDirection: 'row', gap: spacing.md },

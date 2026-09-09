@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, font } from '../theme/theme';
+import { ThemeColors, font, useThemeColors } from '../theme/theme';
 
 export type NodeState = 'done' | 'current' | 'locked';
 
@@ -30,9 +31,11 @@ export function PathNode({
   accessibilityHint,
   onPress,
 }: Props) {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const locked = state === 'locked';
   const face = locked ? colors.locked : isReview ? colors.gold : color;
-  const edge = locked ? colors.borderDark : shade(face);
+  const edge = locked ? colors.borderDark : shade(face, colors);
 
   return (
     <View style={[styles.wrap, { transform: [{ translateX: offset }] }]}>
@@ -73,14 +76,14 @@ export function PathNode({
 }
 
 /** Dunklere Variante einer Farbe fuer die Unterkante. */
-function shade(hex: string): string {
+function shade(hex: string, colors: ThemeColors): string {
   const value = hex.replace('#', '');
   if (value.length !== 6) return colors.borderDark;
   const rgb = [0, 2, 4].map((i) => Math.round(parseInt(value.slice(i, i + 2), 16) * 0.75));
   return `#${rgb.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: { alignItems: 'center', alignSelf: 'center', width: 72, marginVertical: 10 },
   node: {
     width: 72,

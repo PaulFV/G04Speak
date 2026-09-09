@@ -1,15 +1,17 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 
-import { colors, font, radius, spacing } from '../theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../theme/theme';
 
 type Variant = 'primary' | 'danger' | 'secondary' | 'ghost';
 
-const VARIANTS: Record<Variant, { bg: string; edge: string; text: string; border?: string }> = {
-  primary: { bg: colors.green, edge: colors.greenDark, text: colors.textOnDark },
-  danger: { bg: colors.red, edge: colors.redDark, text: colors.textOnDark },
-  secondary: { bg: colors.blue, edge: colors.blueDark, text: colors.textOnDark },
-  ghost: { bg: colors.bg, edge: colors.border, text: colors.textMuted, border: colors.border },
-};
+function variantsFor(colors: ThemeColors): Record<Variant, { bg: string; edge: string; text: string; border?: string }> {
+  return {
+    primary: { bg: colors.green, edge: colors.greenDark, text: colors.textOnDark },
+    danger: { bg: colors.red, edge: colors.redDark, text: colors.textOnDark },
+    secondary: { bg: colors.blue, edge: colors.blueDark, text: colors.textOnDark },
+    ghost: { bg: colors.bg, edge: colors.border, text: colors.textMuted, border: colors.border },
+  };
+}
 
 interface Props {
   label: string;
@@ -22,7 +24,8 @@ interface Props {
 
 /** Der typische, leicht erhabene Button mit farbiger Unterkante. */
 export function Button({ label, onPress, variant = 'primary', disabled, loading, style }: Props) {
-  const scheme = VARIANTS[variant];
+  const colors = useThemeColors();
+  const scheme = variantsFor(colors)[variant];
   const inactive = disabled || loading;
 
   return (
