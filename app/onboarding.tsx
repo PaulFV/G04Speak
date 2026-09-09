@@ -121,12 +121,12 @@ export default function Onboarding() {
           <View style={styles.hero}>
             <Image
               accessibilityIgnoresInvertColors
-              accessibilityLabel="GoSpeak"
-              source={require('../assets/gospeak-space-icon.png')}
+              accessibilityLabel="G04Speak"
+              source={require('../assets/gospeak-space-icon-floating.png')}
               style={styles.logoMark}
             />
             <View style={styles.heroCopy}>
-              <Text style={styles.logo}>GoSpeak</Text>
+              <Text style={styles.logo}>G04Speak</Text>
               <Text style={styles.tagline}>{strings.tagline}</Text>
               <View style={styles.trustRow}>
                 <TrustItem icon="translate" label={strings.languagesBadge} colors={colors} styles={styles} />
@@ -297,7 +297,9 @@ function TrustItem({
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  page: { flexGrow: 1, padding: spacing.lg, justifyContent: 'center' },
+  // "flex-start" statt "center", damit Logo und Text weiter oben sitzen,
+  // statt auf dem ganzen Bildschirm mittig zu schweben.
+  page: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl, justifyContent: 'flex-start' },
   shell: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg },
   hero: {
     flexDirection: 'row',
@@ -306,11 +308,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.lg,
     paddingTop: spacing.sm,
   },
-  logoMark: { width: 88, height: 88, borderRadius: 22 },
+  // Die "-floating"-Version des Icons hat schon einen weichen, transparenten
+  // Rand statt der eckigen App-Icon-Kachel - deshalb hier ohne borderRadius,
+  // sonst wuerde die eigene Kante wieder eine Box vortaeuschen.
+  logoMark: { width: 104, height: 104 },
   heroCopy: { flexShrink: 1 },
   logo: { fontSize: 40, fontWeight: '900', color: '#4C1D95', letterSpacing: -1.5 },
   tagline: { ...font.body, color: colors.textMuted, marginTop: 2 },
-  trustRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  // Auf schmalen Handys reichen die drei Badges nebeneinander nicht in die
+  // Breite neben Logo und Text - ohne flexWrap ragt das letzte Badge dann
+  // ueber den Bildschirmrand hinaus, statt in eine zweite Zeile zu rutschen.
+  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
   trustItem: {
     flexDirection: 'row',
     alignItems: 'center',
