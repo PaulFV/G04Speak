@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '../../src/data/i18n';
 import { useStore } from '../../src/store/useStore';
@@ -8,6 +9,10 @@ import { useThemeColors } from '../../src/theme/theme';
 export default function TabsLayout() {
   const colors = useThemeColors();
   const strings = t(useStore((s) => s.native));
+  // Auf dem iPhone (v.a. als "Zum Home-Bildschirm hinzufuegen"-App im
+  // Vollbild) liegt unten der Home-Indikator - ohne diesen Abstand ragt die
+  // Tableiste darunter, und der Bereich dahinter blieb bisher unlackiert (weiss).
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -21,8 +26,8 @@ export default function TabsLayout() {
           shadowOpacity: 0,
           borderTopWidth: 2,
           borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 8,
+          height: 64 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
