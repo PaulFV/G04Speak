@@ -289,7 +289,7 @@ function TrustItem({
 }) {
   return (
     <View style={styles.trustItem}>
-      <MaterialCommunityIcons name={icon} size={17} color={colors.blueDark} />
+      <MaterialCommunityIcons name={icon} size={13} color={colors.blueDark} />
       <Text style={styles.trustText}>{label}</Text>
     </View>
   );
@@ -299,14 +299,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   // "flex-start" statt "center", damit Logo und Text weiter oben sitzen,
   // statt auf dem ganzen Bildschirm mittig zu schweben.
-  page: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl, justifyContent: 'flex-start' },
+  page: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, justifyContent: 'flex-start' },
   shell: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg },
   hero: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // "flex-start" statt "center": das Icon richtet sich an der obersten
+    // Textzeile aus, statt an der Mitte des ganzen (dreizeiligen) Textblocks
+    // - dadurch sitzt es sichtbar hoeher.
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: spacing.lg,
-    paddingTop: spacing.sm,
+    gap: spacing.md,
   },
   // Die "-floating"-Version des Icons hat schon einen weichen, transparenten
   // Rand statt der eckigen App-Icon-Kachel - deshalb hier ohne borderRadius,
@@ -315,20 +317,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   heroCopy: { flexShrink: 1 },
   logo: { fontSize: 40, fontWeight: '900', color: '#4C1D95', letterSpacing: -1.5 },
   tagline: { ...font.body, color: colors.textMuted, marginTop: 2 },
-  // Auf schmalen Handys reichen die drei Badges nebeneinander nicht in die
-  // Breite neben Logo und Text - ohne flexWrap ragt das letzte Badge dann
-  // ueber den Bildschirmrand hinaus, statt in eine zweite Zeile zu rutschen.
-  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
+  // Eine einzige Zeile, nach rechts ausgerichtet (weg vom Icon) - dafuer
+  // sind die Badges kompakter (kleinere Schrift/Icons/Abstaende) als vorher,
+  // sonst passen alle drei auf schmalen Handys nicht in eine Zeile.
+  trustRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.xs, marginTop: spacing.sm, width: '100%' },
   trustItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    gap: 3,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 3,
     borderRadius: radius.pill,
     backgroundColor: '#E6F7FF',
   },
-  trustText: { ...font.small, color: colors.blueDark },
+  trustText: { ...font.small, fontSize: 11, color: colors.blueDark },
   card: {
     padding: spacing.xl,
     borderRadius: radius.xl,
