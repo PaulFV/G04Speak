@@ -39,9 +39,16 @@ export interface CourseProgress {
   stats: Record<string, TermStat>;
   /** Einstiegspunkt im Lernpfad, festgelegt beim ersten Start dieses Sprachpaars. */
   startOrder: number;
+  /**
+   * Lernlevel, das beim Start DIESES Sprachpaars gewaehlt wurde (bestimmt
+   * startOrder oben). Getrennt vom globalen skillLevel, denn "fortgeschritten"
+   * in Englisch heisst nicht automatisch "fortgeschritten" in einer neuen,
+   * noch nie gelernten Sprache.
+   */
+  level: SkillLevel;
 }
 
-function courseKey(native: Lang, target: Lang): string {
+export function courseKey(native: Lang, target: Lang): string {
   return `${native}-${target}`;
 }
 
@@ -92,7 +99,7 @@ interface State {
   progressByCourse: Record<string, CourseProgress>;
   unlockedAchievements: string[];
 
-  setCourse: (native: Lang, target: Lang) => void;
+  setCourse: (native: Lang, target: Lang, startLevel?: SkillLevel) => void;
   setNativeLanguage: (native: Lang) => void;
   setThemeMode: (themeMode: ThemeMode) => void;
   setSoundEnabled: (soundEnabled: boolean) => void;
@@ -146,9 +153,13 @@ export const useStore = create<State>()(
       // Jedes Sprachpaar behaelt seinen eigenen Fortschritt: Beim Verlassen
       // eines Kurses wird er in progressByCourse abgelegt, beim (Wieder-)
       // Betreten eines Kurses wieder geladen. Ein noch nie gelernter Kurs
-      // startet - je nach gewaehltem Lernlevel - nicht zwingend bei Lektion 1
-      // (siehe startOrderForSkillLevel).
-      setCourse: (native, target) => {
+      // startet nur dann weiter vorne im Pfad, wenn beim Start dieses
+      // Sprachpaars explizit ein Lernlevel > Anfaenger angegeben wurde
+      // (startLevel) - "fortgeschritten" in einer Sprache heisst nicht,
+      // dass man eine ANDERE, noch nie gelernte Sprache schon kennt, daher
+      // faellt eine neue Sprache ohne Angabe immer auf Anfaenger/Lektion 1
+      // zurueck, statt das globale skillLevel einer anderen Sprache zu erben.
+      setCourse: (native, target, startLevel) => {
         if (native === target) return;
         const state = get();
 
@@ -158,15 +169,18 @@ export const useStore = create<State>()(
             completed: state.completed,
             stats: state.stats,
             startOrder: state.courseStartOrder,
+            level: state.skillLevel ?? 'beginner',
           };
         }
 
         const key = courseKey(native, target);
         const existing = progressByCourse[key];
+        const level = existing?.level ?? startLevel ?? 'beginner';
         const courseProgress: CourseProgress = existing ?? {
           completed: {},
           stats: {},
-          startOrder: startOrderForSkillLevel(state.skillLevel),
+          startOrder: startOrderForSkillLevel(startLevel),
+          level,
         };
         progressByCourse[key] = courseProgress;
 
@@ -177,6 +191,9 @@ export const useStore = create<State>()(
           completed: courseProgress.completed,
           stats: courseProgress.stats,
           courseStartOrder: courseProgress.startOrder,
+          // Uebungsschwierigkeit richtet sich nach dem Level DIESES Kurses,
+          // nicht mehr nach dem zuletzt global gesetzten Wert.
+          skillLevel: courseProgress.level,
         });
       },
       setNativeLanguage: (native) => {
