@@ -1,5 +1,5 @@
 /**
- * Die acht von GoSpeak unterstuetzten Sprachen.
+ * Die acht von G04Speak unterstuetzten Sprachen.
  *
  * Jeder Vokabeleintrag traegt eine Uebersetzung fuer jede dieser Sprachen.
  * Dadurch entsteht aus einem einzigen Datensatz jede beliebige Kombination
