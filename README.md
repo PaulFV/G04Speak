@@ -1,4 +1,4 @@
-# GoSpeak
+# G04Speak
 
 Eine Sprachlern-App für iPhone und Android — nach dem Vorbild von Duolingo, gebaut mit React Native und Expo.
 
@@ -117,4 +117,4 @@ Es gibt keinen Server: aller Fortschritt liegt auf dem Gerät, die App funktioni
 
 MIT — siehe [LICENSE](LICENSE).
 
-*GoSpeak ist ein eigenständiges Lernprojekt und steht in keiner Verbindung zu Duolingo.*
+*G04Speak ist ein eigenständiges Lernprojekt und steht in keiner Verbindung zu Duolingo.*
