@@ -13,28 +13,62 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../src/components/Button';
-import { t } from '../src/data/i18n';
+import { Strings, t } from '../src/data/i18n';
 import { LANGUAGE_LIST, Lang, LANGUAGES } from '../src/data/languages';
-import { useStore } from '../src/store/useStore';
+import { SkillLevel, courseKey, useStore } from '../src/store/useStore';
 import { ThemeColors, font, radius, spacing, useThemeColors } from '../src/theme/theme';
 
-/** Kursauswahl in zwei kurzen, klar erkennbaren Schritten. */
+type Step = 'native' | 'target' | 'level';
+
+const SKILL_LEVELS: { id: SkillLevel; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
+  { id: 'beginner', icon: 'seed-outline' },
+  { id: 'advanced', icon: 'trending-up' },
+  { id: 'pro', icon: 'rocket-launch-outline' },
+  { id: 'teacher', icon: 'school-outline' },
+];
+
+/** Uebersetzter Name je Lernlevel. */
+function skillLevelLabel(id: SkillLevel, strings: Strings): string {
+  switch (id) {
+    case 'beginner': return strings.skillBeginner;
+    case 'advanced': return strings.skillAdvanced;
+    case 'pro': return strings.skillPro;
+    case 'teacher': return strings.skillTeacher;
+  }
+}
+
+/** Kursauswahl in kurzen, klar erkennbaren Schritten. */
 export default function Onboarding() {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const setCourse = useStore((s) => s.setCourse);
   const savedNative = useStore((s) => s.native);
+  const progressByCourse = useStore((s) => s.progressByCourse);
   const { width } = useWindowDimensions();
 
   const [native, setNative] = useState<Lang | null>(savedNative);
   const [target, setTarget] = useState<Lang | null>(null);
-  const [step, setStep] = useState<'native' | 'target'>(savedNative ? 'target' : 'native');
+  const [level, setLevel] = useState<SkillLevel | null>(null);
+  const [step, setStep] = useState<Step>(savedNative ? 'target' : 'native');
 
   // Vor der Wahl der Muttersprache zeigen wir die App auf Deutsch.
   const strings = t(native);
-  const stepNumber = step === 'native' ? 1 : 2;
   const compact = width < 560;
+
+  // Ein bereits einmal gelerntes Sprachpaar hat seinen Fortschritt (und sein
+  // Lernlevel) schon gespeichert - dann muss nicht erneut nach dem Level
+  // gefragt werden, wir springen direkt zurueck in den Kurs.
+  function hasExistingProgress(nativeLang: Lang, targetLang: Lang): boolean {
+    return Boolean(progressByCourse[courseKey(nativeLang, targetLang)]);
+  }
+
+  // Solange noch keine Zielsprache gewaehlt ist, wissen wir nicht, ob der
+  // Level-Schritt noch kommt - wir nehmen dann optimistisch "ja" an, damit
+  // die Anzeige nicht nachtraeglich von "2" auf "3" hochzaehlt.
+  const needsLevelStep = !(native && target && hasExistingProgress(native, target));
+  const stepNumber = step === 'native' ? 1 : step === 'target' ? 2 : 3;
+  const totalSteps = needsLevelStep ? 3 : 2;
 
   function choose(language: Lang) {
     if (step === 'native') {
@@ -46,19 +80,35 @@ export default function Onboarding() {
   }
 
   function goBack() {
+    if (step === 'level') {
+      setStep('target');
+      return;
+    }
     setStep('native');
     setTarget(null);
   }
 
-  function start() {
+  function goToNextFromTarget() {
     if (!native || !target) return;
-    setCourse(native, target);
+    if (hasExistingProgress(native, target)) {
+      start(null);
+      return;
+    }
+    setLevel(null);
+    setStep('level');
+  }
+
+  function start(startLevel: SkillLevel | null) {
+    if (!native || !target) return;
+    setCourse(native, target, startLevel ?? undefined);
     router.replace('/(tabs)');
   }
 
   const languages = LANGUAGE_LIST.filter(
     (language) => step === 'native' || language.code !== native,
   );
+
+  const stepTitle = step === 'native' ? strings.iSpeak : step === 'target' ? strings.iLearn : strings.levelQuestion;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -88,65 +138,105 @@ export default function Onboarding() {
 
           <View style={styles.card}>
             <View style={styles.stepHeader}>
-              <View>
-                <Text style={styles.eyebrow}>{stepNumber} / 2</Text>
+              <View style={styles.stepHeaderText}>
+                <Text style={styles.eyebrow}>{stepNumber} / {totalSteps}</Text>
                 <Text accessibilityRole="header" style={styles.question}>
-                  {step === 'native' ? strings.iSpeak : strings.iLearn}
+                  {stepTitle}
                 </Text>
+                {step === 'level' ? <Text style={styles.levelHint}>{strings.levelHint}</Text> : null}
               </View>
-              <View accessibilityLabel={`${stepNumber} von 2`} style={styles.dots}>
-                <View style={styles.dotActive} />
-                <View style={stepNumber === 2 ? styles.dotActive : styles.dot} />
+              <View accessibilityLabel={`${stepNumber} von ${totalSteps}`} style={styles.dots}>
+                {Array.from({ length: totalSteps }, (_, index) => (
+                  <View key={index} style={index < stepNumber ? styles.dotActive : styles.dot} />
+                ))}
               </View>
             </View>
 
-            <View accessibilityRole="radiogroup" style={styles.grid}>
-              {languages.map((language) => {
-                const selected = step === 'native' ? native === language.code : target === language.code;
-                return (
-                  <Pressable
-                    key={language.code}
-                    accessibilityLabel={language.name}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                    onPress={() => choose(language.code)}
-                    style={({ pressed }) => [
-                      styles.languageCard,
-                      { width: compact ? '48%' : '31.5%' },
-                      selected && styles.languageCardSelected,
-                      pressed && styles.languageCardPressed,
-                    ]}
-                  >
-                    <View style={[styles.flagBadge, { backgroundColor: `${language.color}14` }]}>
-                      <MaterialCommunityIcons name="translate" size={21} color={language.code === 'de' ? colors.blue : language.color} />
-                    </View>
-                    <Text numberOfLines={1} style={[styles.cardName, selected && styles.languageCardSelectedText]}>
-                      {language.name}
-                    </Text>
-                    {selected ? (
-                      <MaterialCommunityIcons
-                        name="check-circle"
-                        size={20}
-                        color={colors.blue}
-                        style={styles.check}
-                      />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
+            {step === 'level' ? (
+              <View accessibilityRole="radiogroup" style={styles.grid}>
+                {SKILL_LEVELS.map((levelOption) => {
+                  const selected = level === levelOption.id;
+                  return (
+                    <Pressable
+                      key={levelOption.id}
+                      accessibilityLabel={skillLevelLabel(levelOption.id, strings)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      onPress={() => setLevel(levelOption.id)}
+                      style={({ pressed }) => [
+                        styles.languageCard,
+                        { width: compact ? '48%' : '31.5%' },
+                        selected && styles.languageCardSelected,
+                        pressed && styles.languageCardPressed,
+                      ]}
+                    >
+                      <View style={[styles.flagBadge, { backgroundColor: `${colors.purple}14` }]}>
+                        <MaterialCommunityIcons name={levelOption.icon} size={21} color={colors.purple} />
+                      </View>
+                      <Text numberOfLines={1} style={[styles.cardName, selected && styles.languageCardSelectedText]}>
+                        {skillLevelLabel(levelOption.id, strings)}
+                      </Text>
+                      {selected ? (
+                        <MaterialCommunityIcons
+                          name="check-circle"
+                          size={20}
+                          color={colors.blue}
+                          style={styles.check}
+                        />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <View accessibilityRole="radiogroup" style={styles.grid}>
+                {languages.map((language) => {
+                  const selected = step === 'native' ? native === language.code : target === language.code;
+                  return (
+                    <Pressable
+                      key={language.code}
+                      accessibilityLabel={language.name}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      onPress={() => choose(language.code)}
+                      style={({ pressed }) => [
+                        styles.languageCard,
+                        { width: compact ? '48%' : '31.5%' },
+                        selected && styles.languageCardSelected,
+                        pressed && styles.languageCardPressed,
+                      ]}
+                    >
+                      <View style={[styles.flagBadge, { backgroundColor: `${language.color}14` }]}>
+                        <MaterialCommunityIcons name="translate" size={21} color={language.code === 'de' ? colors.blue : language.color} />
+                      </View>
+                      <Text numberOfLines={1} style={[styles.cardName, selected && styles.languageCardSelectedText]}>
+                        {language.name}
+                      </Text>
+                      {selected ? (
+                        <MaterialCommunityIcons
+                          name="check-circle"
+                          size={20}
+                          color={colors.blue}
+                          style={styles.check}
+                        />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
             <View style={styles.footer}>
-              {step === 'target' && native ? (
+              {step !== 'native' ? (
                 <Pressable
-                  accessibilityLabel={`${strings.iSpeak}: ${LANGUAGES[native].name}. Zurück`}
+                  accessibilityLabel={`${strings.iSpeak}: ${native ? LANGUAGES[native].name : ''}. Zurück`}
                   accessibilityRole="button"
                   onPress={goBack}
                   style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
                 >
                   <MaterialCommunityIcons name="arrow-left" size={20} color={colors.textMuted} />
                   <Text style={styles.backText}>
-                    {step === 'target' && native ? LANGUAGES[native].name : 'Level'}
+                    {step === 'level' && target ? LANGUAGES[target].name : native ? LANGUAGES[native].name : ''}
                   </Text>
                 </Pressable>
               ) : (
@@ -154,9 +244,21 @@ export default function Onboarding() {
               )}
 
               <Button
-                label={step === 'native' ? strings.next : strings.startLearning}
-                disabled={step === 'native' ? !native : !target}
-                onPress={step === 'native' ? () => setStep('target') : start}
+                label={
+                  step === 'native'
+                    ? strings.next
+                    : step === 'target'
+                      ? (needsLevelStep ? strings.next : strings.startLearning)
+                      : strings.startLearning
+                }
+                disabled={step === 'native' ? !native : step === 'target' ? !target : !level}
+                onPress={
+                  step === 'native'
+                    ? () => setStep('target')
+                    : step === 'target'
+                      ? goToNextFromTarget
+                      : () => start(level)
+                }
                 style={styles.cta}
               />
             </View>
@@ -232,9 +334,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowRadius: 24,
     elevation: 3,
   },
-  stepHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stepHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  stepHeaderText: { flex: 1, paddingRight: spacing.md },
   eyebrow: { ...font.small, color: colors.greenDark, letterSpacing: 1 },
   question: { ...font.h1, color: colors.text, marginTop: 2 },
+  levelHint: { ...font.body, color: colors.textMuted, marginTop: spacing.xs },
   dots: { flexDirection: 'row', gap: spacing.xs },
   dot: { width: 24, height: 7, borderRadius: radius.pill, backgroundColor: colors.border },
   dotActive: { width: 24, height: 7, borderRadius: radius.pill, backgroundColor: colors.green },
