@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Href, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useRef } from 'react';
+import { LayoutChangeEvent, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PathNode } from '../../src/components/PathNode';
@@ -10,21 +10,38 @@ import { TopBar } from '../../src/components/TopBar';
 import { t } from '../../src/data/i18n';
 import { COURSE, Lesson, isUnlocked, nextLesson } from '../../src/lib/course';
 import { useStore } from '../../src/store/useStore';
-import { colors, font, radius, spacing } from '../../src/theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../src/theme/theme';
 
 /** Waagerechte Verschiebung der Knoten - erzeugt den geschlaengelten Pfad. */
 const WAVE = [0, 40, 60, 40, 0, -40, -60, -40];
 
 export default function LearnPath() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const native = useStore((s) => s.native);
   const completed = useStore((s) => s.completed);
+  const courseStartOrder = useStore((s) => s.courseStartOrder);
   const dailyGoal = useStore((s) => s.dailyGoal);
   const xpToday = useStore((s) => s.xpToday);
   const regenerateHearts = useStore((s) => s.regenerateHearts);
 
   const strings = t(native);
-  const current = nextLesson(completed);
+  const current = nextLesson(completed, courseStartOrder);
+
+  const scrollRef = useRef<ScrollView>(null);
+
+  /**
+   * Springt beim (Wieder-)Betreten des Pfads direkt zur aktuellen Einheit,
+   * statt immer ganz oben bei der ersten Lektion zu starten. Wird pro
+   * Einheit ausgeloest, sobald deren Layout feststeht (also bei jedem
+   * frischen Aufbau des Bildschirms, z. B. nach Abschluss einer Lektion).
+   */
+  function handleSectionLayout(unitId: string, event: LayoutChangeEvent) {
+    if (current?.unitId !== unitId) return;
+    const y = event.nativeEvent.layout.y;
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - spacing.lg), animated: false });
+  }
 
   // Beim Zurueckkehren auf den Pfad koennen inzwischen Herzen nachgewachsen sein.
   useFocusEffect(
@@ -34,7 +51,7 @@ export default function LearnPath() {
   );
 
   function open(lesson: Lesson) {
-    if (!isUnlocked(lesson, completed)) return;
+    if (!isUnlocked(lesson, completed, courseStartOrder)) return;
     // Ein direkter Pfad verhindert interne Router-Parameter in der sichtbaren Web-URL.
     router.push(`/lesson/${lesson.id}` as Href);
   }
@@ -54,12 +71,16 @@ export default function LearnPath() {
         <ProgressBar value={xpToday / dailyGoal} color={colors.orange} height={12} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.path} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.path} showsVerticalScrollIndicator={false}>
         {COURSE.map(({ unit, lessons }) => {
           const done = lessons.filter((l) => completed[l.id]).length;
 
           return (
-            <View key={unit.id} style={styles.section}>
+            <View
+              key={unit.id}
+              style={styles.section}
+              onLayout={(event) => handleSectionLayout(unit.id, event)}
+            >
               <View style={[styles.banner, { backgroundColor: unit.color }]}>
                 <View style={styles.bannerText}>
                   <Text style={styles.bannerUnit}>{strings.unit}</Text>
@@ -83,7 +104,7 @@ export default function LearnPath() {
                   state={
                     completed[lesson.id]
                       ? 'done'
-                      : isUnlocked(lesson, completed)
+                      : isUnlocked(lesson, completed, courseStartOrder)
                         ? 'current'
                         : 'locked'
                   }
@@ -94,7 +115,7 @@ export default function LearnPath() {
                   label={current?.id === lesson.id ? strings.start : undefined}
                   accessibilityLabel={`${lesson.isReview ? strings.review : strings.lesson}: ${unit.title[native ?? 'de']}, ${lesson.index}`}
                   accessibilityHint={
-                    isUnlocked(lesson, completed) ? undefined : strings.lockedHint
+                    isUnlocked(lesson, completed, courseStartOrder) ? undefined : strings.lockedHint
                   }
                   onPress={() => open(lesson)}
                 />
@@ -111,7 +132,7 @@ export default function LearnPath() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   goal: {
     width: '100%',

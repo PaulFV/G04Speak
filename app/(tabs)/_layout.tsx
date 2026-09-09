@@ -3,9 +3,10 @@ import { Tabs } from 'expo-router';
 
 import { t } from '../../src/data/i18n';
 import { useStore } from '../../src/store/useStore';
-import { colors } from '../../src/theme/theme';
+import { useThemeColors } from '../../src/theme/theme';
 
 export default function TabsLayout() {
+  const colors = useThemeColors();
   const strings = t(useStore((s) => s.native));
 
   return (

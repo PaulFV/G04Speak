@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -16,11 +16,13 @@ import { Button } from '../src/components/Button';
 import { t } from '../src/data/i18n';
 import { LANGUAGE_LIST, Lang, LANGUAGES } from '../src/data/languages';
 import { useStore } from '../src/store/useStore';
-import { colors, font, radius, spacing } from '../src/theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../src/theme/theme';
 
 /** Kursauswahl in zwei kurzen, klar erkennbaren Schritten. */
 export default function Onboarding() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const setCourse = useStore((s) => s.setCourse);
   const savedNative = useStore((s) => s.native);
   const { width } = useWindowDimensions();
@@ -77,9 +79,9 @@ export default function Onboarding() {
               <Text style={styles.logo}>GoSpeak</Text>
               <Text style={styles.tagline}>{strings.tagline}</Text>
               <View style={styles.trustRow}>
-                <TrustItem icon="translate" label={strings.languagesBadge} />
-                <TrustItem icon="swap-horizontal" label={strings.coursesBadge} />
-                <TrustItem icon="shield-check-outline" label={strings.privateBadge} />
+                <TrustItem icon="translate" label={strings.languagesBadge} colors={colors} styles={styles} />
+                <TrustItem icon="swap-horizontal" label={strings.coursesBadge} colors={colors} styles={styles} />
+                <TrustItem icon="shield-check-outline" label={strings.privateBadge} colors={colors} styles={styles} />
               </View>
             </View>
           </View>
@@ -170,7 +172,19 @@ export default function Onboarding() {
   );
 }
 
-function TrustItem({ icon, label }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string }) {
+type Styles = ReturnType<typeof createStyles>;
+
+function TrustItem({
+  icon,
+  label,
+  colors,
+  styles,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  colors: ThemeColors;
+  styles: Styles;
+}) {
   return (
     <View style={styles.trustItem}>
       <MaterialCommunityIcons name={icon} size={17} color={colors.blueDark} />
@@ -179,7 +193,7 @@ function TrustItem({ icon, label }: { icon: keyof typeof MaterialCommunityIcons.
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   page: { flexGrow: 1, padding: spacing.lg, justifyContent: 'center' },
   shell: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg },

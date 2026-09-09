@@ -28,17 +28,20 @@ import { Exercise, buildLesson, isAnswerCorrect, requeue } from '../../src/lib/e
 import { speak } from '../../src/lib/speech';
 import { dueTermIds } from '../../src/lib/srs';
 import { useStore } from '../../src/store/useStore';
-import { colors, font, radius, spacing } from '../../src/theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../src/theme/theme';
 
 type Verdict = 'correct' | 'wrong';
 
 export default function LessonScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const native = useStore((s) => s.native);
   const target = useStore((s) => s.target);
   const skillLevel = useStore((s) => s.skillLevel);
+  const soundEnabled = useStore((s) => s.soundEnabled);
   const hearts = useStore((s) => s.hearts);
   const gems = useStore((s) => s.gems);
   const stats = useStore((s) => s.stats);
@@ -59,6 +62,7 @@ export default function LessonScreen() {
       native,
       target,
       skillLevel,
+      soundEnabled,
       // Wiederholungslektionen decken ihre Einheit schon selbst ab.
       reviewTermIds: lesson.isReview ? [] : dueTermIds(stats, 3),
     });
@@ -252,10 +256,10 @@ export default function LessonScreen() {
 
         <View style={styles.footer}>
           <Button
-            label="🎁 Tagesbonus: 50 Krypto"
+            label={`🎁 ${strings.dailyBonus}`}
             variant="secondary"
             onPress={() => {
-              if (!claimDailyBonus()) Alert.alert('Tagesbonus', 'Der Tagesbonus wurde heute bereits abgeholt.');
+              if (!claimDailyBonus()) Alert.alert(strings.dailyBonus, strings.dailyBonusClaimed);
             }}
           />
           <Button
@@ -392,7 +396,7 @@ export default function LessonScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },

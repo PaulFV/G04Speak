@@ -1,27 +1,39 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressBar } from '../../src/components/ProgressBar';
-import { t } from '../../src/data/i18n';
+import { Strings, t } from '../../src/data/i18n';
 import { LANGUAGES } from '../../src/data/languages';
 import { TERMS } from '../../src/data/vocabulary';
 import { DailyGoal, SkillLevel, levelFromXp, useStore, xpIntoLevel } from '../../src/store/useStore';
-import { colors, font, radius, spacing } from '../../src/theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../src/theme/theme';
 
 const GOALS: DailyGoal[] = [10, 20, 30, 50];
-const SKILL_LEVELS: { id: SkillLevel; name: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
-  { id: 'beginner', name: 'Anfänger', icon: 'seed-outline' },
-  { id: 'advanced', name: 'Fortgeschritten', icon: 'trending-up' },
-  { id: 'pro', name: 'Profi', icon: 'rocket-launch-outline' },
-  { id: 'teacher', name: 'Lehrer', icon: 'school-outline' },
+const SKILL_LEVELS: { id: SkillLevel; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
+  { id: 'beginner', icon: 'seed-outline' },
+  { id: 'advanced', icon: 'trending-up' },
+  { id: 'pro', icon: 'rocket-launch-outline' },
+  { id: 'teacher', icon: 'school-outline' },
 ];
+
+/** Uebersetzter Name je Lernlevel. */
+function skillLevelName(id: SkillLevel, strings: Strings): string {
+  switch (id) {
+    case 'beginner': return strings.skillBeginner;
+    case 'advanced': return strings.skillAdvanced;
+    case 'pro': return strings.skillPro;
+    case 'teacher': return strings.skillTeacher;
+  }
+}
 
 export default function Profile() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const native = useStore((s) => s.native);
   const target = useStore((s) => s.target);
   const xp = useStore((s) => s.xp);
@@ -32,10 +44,10 @@ export default function Profile() {
   const reset = useStore((s) => s.reset);
   const themeMode = useStore((s) => s.themeMode);
   const setThemeMode = useStore((s) => s.setThemeMode);
-  const cryptoCurrency = useStore((s) => s.cryptoCurrency);
-  const setCryptoCurrency = useStore((s) => s.setCryptoCurrency);
   const skillLevel = useStore((s) => s.skillLevel);
   const setSkillLevel = useStore((s) => s.setSkillLevel);
+  const soundEnabled = useStore((s) => s.soundEnabled);
+  const setSoundEnabled = useStore((s) => s.setSoundEnabled);
   const setNativeLanguage = useStore((s) => s.setNativeLanguage);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -43,9 +55,11 @@ export default function Profile() {
     if (Platform.OS === 'web' && typeof localStorage !== 'undefined') setAvatarUri(localStorage.getItem('gospeak-avatar'));
   }, []);
 
+  const strings = t(native);
+
   function chooseAvatar() {
     if (Platform.OS !== 'web') {
-      Alert.alert('Profilbild', 'Die Bildauswahl ist aktuell in der Web-Version verfügbar.');
+      Alert.alert(strings.changeAvatar, strings.avatarWebOnly);
       return;
     }
     fileInput.current?.click();
@@ -63,7 +77,6 @@ export default function Profile() {
     reader.readAsDataURL(file);
   }
 
-  const strings = t(native);
   const level = levelFromXp(xp);
 
   function confirmReset() {
@@ -84,7 +97,7 @@ export default function Profile() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Profilbild ändern" onPress={chooseAvatar} style={styles.avatar}>
+          <Pressable accessibilityRole="button" accessibilityLabel={strings.changeAvatar} onPress={chooseAvatar} style={styles.avatar}>
             {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <MaterialCommunityIcons name="account" size={48} color={colors.textOnDark} />}
             <View pointerEvents="none" style={styles.avatarEdit}><MaterialCommunityIcons name="pencil" size={16} color={colors.textOnDark} /></View>
           </Pressable>
@@ -105,13 +118,14 @@ export default function Profile() {
         </View>
 
         <View style={styles.stats}>
-          <Stat icon="fire" color={colors.orange} value={streak} label={strings.streakDays} />
-          <Stat icon="lightning-bolt" color={colors.gold} value={xp} label={strings.totalXp} />
+          <Stat icon="fire" color={colors.orange} value={streak} label={strings.streakDays} styles={styles} />
+          <Stat icon="lightning-bolt" color={colors.gold} value={xp} label={strings.totalXp} styles={styles} />
           <Stat
             icon="text-box-check"
             color={colors.purple}
             value={`${learned}/${TERMS.length}`}
             label={strings.words}
+            styles={styles}
           />
         </View>
 
@@ -134,7 +148,7 @@ export default function Profile() {
 
         <Text style={styles.sectionTitle}>{strings.settings}</Text>
 
-        <Text style={styles.settingHint}>Eigene Sprache</Text>
+        <Text style={styles.settingHint}>{strings.yourLanguage}</Text>
         <View style={styles.levelChoices}>
           {Object.values(LANGUAGES).map((language) => (
             <Pressable key={language.code} accessibilityRole="radio" accessibilityLabel={language.name} accessibilityState={{ selected: native === language.code }} onPress={() => setNativeLanguage(language.code)} style={[styles.levelChip, native === language.code && styles.levelChipActive]}>
@@ -143,12 +157,12 @@ export default function Profile() {
           ))}
         </View>
 
-        <Text style={styles.settingHint}>Lernlevel</Text>
+        <Text style={styles.settingHint}>{strings.skillLevel}</Text>
         <View style={styles.levelChoices}>
           {SKILL_LEVELS.map((levelOption) => (
             <Pressable key={levelOption.id} accessibilityRole="radio" accessibilityState={{ selected: skillLevel === levelOption.id }} onPress={() => setSkillLevel(levelOption.id)} style={[styles.levelChip, skillLevel === levelOption.id && styles.levelChipActive]}>
               <MaterialCommunityIcons name={levelOption.icon} size={18} color={skillLevel === levelOption.id ? colors.blue : colors.textMuted} />
-              <Text style={[styles.levelChipText, skillLevel === levelOption.id && styles.levelChipTextActive]}>{levelOption.name}</Text>
+              <Text style={[styles.levelChipText, skillLevel === levelOption.id && styles.levelChipTextActive]}>{skillLevelName(levelOption.id, strings)}</Text>
             </Pressable>
           ))}
         </View>
@@ -164,26 +178,6 @@ export default function Profile() {
           <MaterialCommunityIcons name="chevron-right" size={22} color={colors.lockedText} />
         </Pressable>
 
-        <View style={styles.cryptoRow}>
-          <Text style={styles.itemText}>Krypto-Belohnung</Text>
-          <View style={styles.cryptoChoices}>
-            {(['BTC', 'XRP'] as const).map((currency) => (
-              <Pressable
-                key={currency}
-                accessibilityRole="radio"
-                accessibilityLabel={currency === 'BTC' ? 'Bitcoin' : 'XRP'}
-                accessibilityState={{ selected: cryptoCurrency === currency }}
-                onPress={() => setCryptoCurrency(currency)}
-                style={[styles.cryptoChip, cryptoCurrency === currency && styles.cryptoChipActive]}
-              >
-                <Text style={[styles.cryptoText, cryptoCurrency === currency && styles.cryptoTextActive]}>
-                  {currency === 'BTC' ? '₿ BTC' : 'XRP'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
         <Pressable
           accessibilityRole="switch"
           accessibilityLabel={themeMode === 'dark' ? `${strings.lightMode} aktivieren` : `${strings.darkMode} aktivieren`}
@@ -194,6 +188,19 @@ export default function Profile() {
           <MaterialCommunityIcons name={themeMode === 'dark' ? 'weather-sunny' : 'weather-night'} size={22} color={colors.purple} />
           <Text style={styles.itemText}>{themeMode === 'dark' ? strings.lightMode : strings.darkMode}</Text>
           <Text style={styles.modeValue}>{themeMode === 'dark' ? strings.enabled : strings.disabled}</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityLabel={`${strings.sound} ${soundEnabled ? strings.disabled : strings.enabled}`}
+          accessibilityState={{ checked: soundEnabled }}
+          accessibilityHint={strings.soundOffHint}
+          style={styles.item}
+          onPress={() => setSoundEnabled(!soundEnabled)}
+        >
+          <MaterialCommunityIcons name={soundEnabled ? 'volume-high' : 'volume-off'} size={22} color={colors.purple} />
+          <Text style={styles.itemText}>{strings.sound}</Text>
+          <Text style={styles.modeValue}>{soundEnabled ? strings.enabled : strings.disabled}</Text>
         </Pressable>
 
         <Pressable
@@ -210,16 +217,20 @@ export default function Profile() {
   );
 }
 
+type Styles = ReturnType<typeof createStyles>;
+
 function Stat({
   icon,
   color,
   value,
   label,
+  styles,
 }: {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   color: string;
   value: number | string;
   label: string;
+  styles: Styles;
 }) {
   return (
     <View style={styles.statCard}>
@@ -230,7 +241,7 @@ function Stat({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: {
     width: '100%',
@@ -291,12 +302,6 @@ const styles = StyleSheet.create({
   },
   itemText: { ...font.body, color: colors.text, flex: 1 },
   modeValue: { ...font.small, color: colors.textMuted },
-  cryptoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md },
-  cryptoChoices: { flexDirection: 'row', gap: spacing.sm },
-  cryptoChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 2, borderColor: colors.border, borderRadius: radius.pill },
-  cryptoChipActive: { borderColor: colors.gold, backgroundColor: '#3A2B12' },
-  cryptoText: { ...font.small, color: colors.textMuted },
-  cryptoTextActive: { color: '#FFD166' },
   settingHint: { ...font.small, color: colors.textMuted },
   levelChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   levelChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 2, borderColor: colors.border, borderRadius: radius.pill },

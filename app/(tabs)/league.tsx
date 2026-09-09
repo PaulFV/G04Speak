@@ -6,13 +6,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '../../src/data/i18n';
 import { buildLeaderboard, leagueForLevel } from '../../src/lib/league';
 import { levelFromXp, useStore } from '../../src/store/useStore';
-import { colors, font, radius, spacing } from '../../src/theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../src/theme/theme';
 
 /** Die oberen Plaetze steigen auf, die unteren ab - wie in der Wochenliga. */
 const PROMOTION_ZONE = 5;
 const DEMOTION_ZONE = 5;
 
 export default function League() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const native = useStore((s) => s.native);
   const xp = useStore((s) => s.xp);
   const weeklyXp = useStore((s) => s.weeklyXp);
@@ -73,7 +75,7 @@ export default function League() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
   leagueName: { ...font.h1, color: colors.textOnDark },

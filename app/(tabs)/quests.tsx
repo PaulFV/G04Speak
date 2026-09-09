@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,9 +7,11 @@ import { ProgressBar } from '../../src/components/ProgressBar';
 import { ACHIEVEMENTS } from '../../src/data/achievements';
 import { t } from '../../src/data/i18n';
 import { levelFromXp, useStore } from '../../src/store/useStore';
-import { colors, font, radius, spacing } from '../../src/theme/theme';
+import { ThemeColors, font, radius, spacing, useThemeColors } from '../../src/theme/theme';
 
 export default function Quests() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const native = useStore((s) => s.native);
   const xp = useStore((s) => s.xp);
   const streak = useStore((s) => s.streak);
@@ -74,7 +77,7 @@ export default function Quests() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.lg, gap: spacing.xs },
   title: { ...font.h1, color: colors.text },
