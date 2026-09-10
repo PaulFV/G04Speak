@@ -365,7 +365,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.bg,
   },
-  languageCardSelected: { borderColor: colors.blue, backgroundColor: '#102F45' },
+  languageCardSelected: { borderColor: colors.blue, backgroundColor: colors.selectedBg },
   languageCardPressed: { transform: [{ scale: 0.985 }] },
   flagBadge: {
     width: 42,
@@ -375,7 +375,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   cardName: { ...font.body, color: colors.text, flex: 1 },
-  languageCardSelectedText: { color: '#F6F7FF' },
+  languageCardSelectedText: { color: colors.text, fontWeight: '700' },
   check: { position: 'absolute', top: 7, right: 7 },
   footer: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   back: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm },
