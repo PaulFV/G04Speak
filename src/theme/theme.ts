@@ -33,6 +33,13 @@ export const darkColors = {
   borderDark: '#465175',
   locked: '#252C46',
   lockedText: '#7C86A7',
+
+  // Hintergrund von "ausgewaehlt"-Zustaenden (Sprachkarten, Chips). Frueher
+  // an diesen Stellen fest verdrahtet statt ueber die Palette zu laufen -
+  // dadurch blieb der helle Modus dort dunkel. Blau-/orange-getoent, damit
+  // die (theme-neutrale) blaue bzw. orange Beschriftung lesbar bleibt.
+  selectedBg: '#102F45',
+  selectedWarnBg: '#3A2B12',
 } as const;
 
 /** Helle Palette - dieselben Akzentfarben, aber ein heller Hintergrund und dunkler Text. */
@@ -50,6 +57,9 @@ export const lightColors = {
   borderDark: '#CBD0E0',
   locked: '#EEF0F6',
   lockedText: '#9AA1B8',
+
+  selectedBg: '#E6F4FF',
+  selectedWarnBg: '#FFF1DE',
 } as const;
 
 export type ThemeColors = { [K in keyof typeof darkColors]: string };
