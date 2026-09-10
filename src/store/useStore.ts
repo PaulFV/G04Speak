@@ -75,6 +75,8 @@ interface State {
   target: Lang | null;
   themeMode: ThemeMode;
   soundEnabled: boolean;
+  /** Lokale Erinnerungen (Serie/Herzen) - standardmaessig aus, bis in den Einstellungen aktiviert. */
+  remindersEnabled: boolean;
   skillLevel: SkillLevel | null;
 
   xp: number;
@@ -84,6 +86,10 @@ interface State {
 
   streak: number;
   lastActiveDay: string | null;
+  /** Anzahl fehlerfrei abgeschlossener Lektionen in Folge - reisst bei der ersten nicht perfekten Runde. */
+  perfectStreak: number;
+  /** Kalendertage (Sa/So), an denen mindestens eine Lektion abgeschlossen wurde - fuer den "Wochenend"-Erfolg. */
+  weekendDays: string[];
 
   dailyGoal: DailyGoal;
   xpToday: number;
@@ -103,6 +109,7 @@ interface State {
   setNativeLanguage: (native: Lang) => void;
   setThemeMode: (themeMode: ThemeMode) => void;
   setSoundEnabled: (soundEnabled: boolean) => void;
+  setRemindersEnabled: (remindersEnabled: boolean) => void;
   setSkillLevel: (skillLevel: SkillLevel) => void;
   setDailyGoal: (goal: DailyGoal) => void;
   regenerateHearts: () => void;
@@ -112,6 +119,8 @@ interface State {
   finishLesson: (result: LessonResult) => { xpGained: number; leveledUp: boolean };
   unlockAchievement: (id: string) => void;
   learnedCount: () => number;
+  /** Anzahl Sprachpaare, in denen bereits mindestens eine Lektion abgeschlossen wurde. */
+  startedCoursesCount: () => number;
   reset: () => void;
 }
 
@@ -123,6 +132,7 @@ const initial = {
   // seit der echten Umsetzung des Umschalters unten.
   themeMode: 'dark' as ThemeMode,
   soundEnabled: true,
+  remindersEnabled: false,
   skillLevel: null as SkillLevel | null,
   xp: 0,
   gems: 100,
@@ -130,6 +140,8 @@ const initial = {
   heartsUpdatedAt: Date.now(),
   streak: 0,
   lastActiveDay: null as string | null,
+  perfectStreak: 0,
+  weekendDays: [] as string[],
   dailyGoal: 20 as DailyGoal,
   xpToday: 0,
   xpTodayDay: dayKey(),
@@ -210,6 +222,7 @@ export const useStore = create<State>()(
 
       setThemeMode: (themeMode) => set({ themeMode }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
+      setRemindersEnabled: (remindersEnabled) => set({ remindersEnabled }),
       setSkillLevel: (skillLevel) => set({ skillLevel }),
 
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
@@ -279,11 +292,20 @@ export const useStore = create<State>()(
         const sameDay = state.xpTodayDay === today;
         const xp = state.xp + xpGained;
 
+        // Wochenendtag (0 = Sonntag, 6 = Samstag) fuer den "Wochenende"-Erfolg
+        // vormerken - jeder Kalendertag zaehlt dabei nur einmal.
+        const isWeekend = [0, 6].includes(new Date().getDay());
+        const weekendDays = isWeekend && !state.weekendDays.includes(today)
+          ? [...state.weekendDays, today]
+          : state.weekendDays;
+
         set({
           xp,
           gems: state.gems + (perfect ? 5 : 2),
           streak,
           lastActiveDay: today,
+          perfectStreak: perfect ? state.perfectStreak + 1 : 0,
+          weekendDays,
           xpToday: (sameDay ? state.xpToday : 0) + xpGained,
           xpTodayDay: today,
           weeklyXp: state.weeklyXp + xpGained,
@@ -302,6 +324,18 @@ export const useStore = create<State>()(
 
       learnedCount: () => Object.values(get().stats).filter(isLearned).length,
 
+      startedCoursesCount: () => {
+        const { native, target, completed, progressByCourse } = get();
+        const keys = new Set(Object.keys(progressByCourse));
+        // Der gerade aktive Kurs liegt bis zum naechsten Sprachwechsel noch
+        // nicht in progressByCourse - hier zusaetzlich mitzaehlen, sofern
+        // schon mindestens eine Lektion abgeschlossen wurde.
+        if (native && target && Object.keys(completed).length > 0) {
+          keys.add(courseKey(native, target));
+        }
+        return keys.size;
+      },
+
       reset: () => set({ ...initial, hydrated: true, heartsUpdatedAt: Date.now(), xpTodayDay: dayKey() }),
     }),
     {
@@ -315,3 +349,54 @@ export const useStore = create<State>()(
     },
   ),
 );
+
+/**
+ * Fortschritt sichern/uebertragen.
+ *
+ * Der gesamte Fortschritt liegt ausschliesslich lokal auf dem Geraet
+ * (AsyncStorage) - ohne Konto und ohne Server gibt es sonst keine Moeglichkeit,
+ * ihn bei einem Geraetewechsel oder einer Neuinstallation zu retten. Die
+ * Sicherung exportiert dieselben Felder, die auch persistiert werden (siehe
+ * `partialize` oben), nur eben als teilbare Datei statt in AsyncStorage.
+ */
+const PERSISTED_FIELDS = [
+  'native', 'target', 'themeMode', 'soundEnabled', 'remindersEnabled', 'skillLevel',
+  'xp', 'gems', 'hearts', 'heartsUpdatedAt', 'streak', 'lastActiveDay', 'perfectStreak',
+  'weekendDays', 'dailyGoal', 'xpToday', 'xpTodayDay', 'weeklyXp', 'lastBonusDay',
+  'completed', 'stats', 'courseStartOrder', 'progressByCourse', 'unlockedAchievements',
+] as const satisfies readonly (keyof State)[];
+
+export const BACKUP_APP_ID = 'g04speak';
+export const BACKUP_SCHEMA_VERSION = 1;
+
+export interface ProgressBackup {
+  app: typeof BACKUP_APP_ID;
+  schemaVersion: number;
+  exportedAt: string;
+  state: Record<string, unknown>;
+}
+
+/** Momentaufnahme des Fortschritts als reines, JSON-taugliches Objekt. */
+export function serializeProgress(): ProgressBackup {
+  const state = useStore.getState();
+  const data: Record<string, unknown> = {};
+  for (const key of PERSISTED_FIELDS) data[key] = state[key];
+  return {
+    app: BACKUP_APP_ID,
+    schemaVersion: BACKUP_SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    state: data,
+  };
+}
+
+/** Grobe Formpruefung, bevor eine eingelesene Datei ungeprueft uebernommen wird. */
+export function isProgressBackup(value: unknown): value is ProgressBackup {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return candidate.app === BACKUP_APP_ID && typeof candidate.state === 'object' && candidate.state !== null;
+}
+
+/** Ersetzt den gesamten lokalen Fortschritt durch den Inhalt einer Sicherung. */
+export function restoreProgress(backup: ProgressBackup): void {
+  useStore.setState({ ...initial, ...backup.state, hydrated: true });
+}
