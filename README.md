@@ -27,10 +27,14 @@ Dadurch ist kein Inhalt an eine Sprachrichtung gebunden. Die App erzeugt jede Ko
 | **Herzen** | 5 Leben, eins pro Fehler; regenerieren alle 30 Minuten oder gegen 50 Edelsteine |
 | **Wiederholung** | Leitner-System mit Stufen (0 / 1 / 3 / 7 / 16 / 35 Tage), fällige Wörter werden eingestreut |
 | **Liga** | Wochen-Rangliste mit Auf- und Abstiegszone |
-| **Erfolge** | Acht Abzeichen mit Fortschrittsanzeige |
+| **Erfolge** | 13 Abzeichen mit Fortschrittsanzeige |
 | **Tagesziel** | Wählbar: 10 / 20 / 30 / 50 XP pro Tag |
+| **Erinnerungen** | Lokale Benachrichtigungen bei gefährdeter Serie oder vollen Herzen — kein Server, ausschaltbar |
+| **Fortschritt sichern** | Export/Import als JSON-Datei, z. B. bei einem Gerätewechsel |
 
 Falsch beantwortete Aufgaben wandern ans Ende der Runde und müssen erneut gelöst werden, bevor die Lektion endet.
+
+Siehe [CHANGELOG.md](CHANGELOG.md) für die Versionshistorie.
 
 ## Im Browser ausprobieren
 
@@ -84,11 +88,14 @@ src/
 │   ├── exercises.ts       Erzeugt die Aufgaben einer Lektion
 │   ├── srs.ts             Verteiltes Wiederholen (Leitner)
 │   ├── league.ts          Rangliste
-│   └── speech.ts          Sprachausgabe
-├── store/useStore.ts      Zustand, lokal gespeichert (AsyncStorage)
+│   ├── speech.ts          Sprachausgabe
+│   └── notifications.ts   Lokale Erinnerungen (Serie/Herzen)
+├── store/useStore.ts      Zustand, lokal gespeichert (AsyncStorage); auch Sichern/Wiederherstellen
 ├── components/            Wiederverwendbare Bausteine
 └── theme/theme.ts         Farben, Abstände, Typografie
 ```
+
+Tests für die Kernlogik liegen jeweils in `__tests__`-Ordnern neben dem geprüften Modul (`npm test`).
 
 ## Inhalte erweitern
 
@@ -109,6 +116,8 @@ Eine neue Einheit braucht zusätzlich einen Eintrag in `UNITS` mit Titel in alle
 - **expo-router** für dateibasierte Navigation
 - **zustand** mit AsyncStorage-Persistenz
 - **expo-speech** für die Sprachausgabe (nutzt die Stimmen des Geräts)
+- **expo-notifications** für lokale Erinnerungen, **expo-image-picker** für das Profilbild, **expo-file-system**/**expo-sharing**/**expo-document-picker** zum Sichern/Wiederherstellen des Fortschritts
+- **jest** + **jest-expo** für Tests der Kernlogik
 - TypeScript im `strict`-Modus
 
 Es gibt keinen Server: aller Fortschritt liegt auf dem Gerät, die App funktioniert offline und sammelt keine Daten.

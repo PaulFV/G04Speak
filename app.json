@@ -3,7 +3,7 @@
     "name": "G04Speak",
     "slug": "gospeak",
     "description": "Lerne acht Sprachen kostenlos, spielerisch und ohne Konto.",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/gospeak-space-icon.png",
     "scheme": "gospeak",
@@ -42,7 +42,20 @@
         }
       ],
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "G04Speak braucht Zugriff auf deine Fotos, um ein Profilbild zu setzen."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/gospeak-space-icon.png",
+          "color": "#090B3D"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
