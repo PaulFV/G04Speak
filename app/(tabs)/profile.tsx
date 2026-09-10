@@ -1,5 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
@@ -10,8 +15,24 @@ import { Strings, t } from '../../src/data/i18n';
 import { Lang, LANGUAGES } from '../../src/data/languages';
 import { TERMS } from '../../src/data/vocabulary';
 import { ALL_LESSONS } from '../../src/lib/course';
-import { CourseProgress, DailyGoal, SkillLevel, courseKey, levelFromXp, useStore, xpIntoLevel } from '../../src/store/useStore';
+import { ensureNotificationPermission } from '../../src/lib/notifications';
+import {
+  CourseProgress,
+  DailyGoal,
+  SkillLevel,
+  courseKey,
+  isProgressBackup,
+  levelFromXp,
+  restoreProgress,
+  serializeProgress,
+  useStore,
+  xpIntoLevel,
+} from '../../src/store/useStore';
 import { ThemeColors, font, radius, spacing, useThemeColors } from '../../src/theme/theme';
+
+/** Fortschritt und Profilbild liegen ausschliesslich lokal auf dem Geraet. */
+const AVATAR_STORAGE_KEY = 'gospeak-avatar';
+const BACKUP_FILE_NAME = 'g04speak-fortschritt.json';
 
 const GOALS: DailyGoal[] = [10, 20, 30, 50];
 const SKILL_LEVELS: { id: SkillLevel; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
@@ -49,24 +70,48 @@ export default function Profile() {
   const setSkillLevel = useStore((s) => s.setSkillLevel);
   const soundEnabled = useStore((s) => s.soundEnabled);
   const setSoundEnabled = useStore((s) => s.setSoundEnabled);
+  const remindersEnabled = useStore((s) => s.remindersEnabled);
+  const setRemindersEnabled = useStore((s) => s.setRemindersEnabled);
   const setNativeLanguage = useStore((s) => s.setNativeLanguage);
   const setCourse = useStore((s) => s.setCourse);
   const completedMap = useStore((s) => s.completed);
   const progressByCourse = useStore((s) => s.progressByCourse);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const backupFileInput = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof localStorage !== 'undefined') setAvatarUri(localStorage.getItem('gospeak-avatar'));
+    if (Platform.OS === 'web') {
+      if (typeof localStorage !== 'undefined') setAvatarUri(localStorage.getItem(AVATAR_STORAGE_KEY));
+      return;
+    }
+    AsyncStorage.getItem(AVATAR_STORAGE_KEY).then(setAvatarUri).catch(() => {});
   }, []);
 
   const strings = t(native);
 
-  function chooseAvatar() {
-    if (Platform.OS !== 'web') {
-      Alert.alert(strings.changeAvatar, strings.avatarWebOnly);
+  async function chooseAvatar() {
+    if (Platform.OS === 'web') {
+      fileInput.current?.click();
       return;
     }
-    fileInput.current?.click();
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(strings.changeAvatar, strings.avatarPermissionDenied);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+      base64: true,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    if (!asset?.base64) return;
+    const uri = `data:image/jpeg;base64,${asset.base64}`;
+    setAvatarUri(uri);
+    try { await AsyncStorage.setItem(AVATAR_STORAGE_KEY, uri); } catch { /* Speicher kann voll sein. */ }
   }
 
   function onAvatarFile(event: ChangeEvent<HTMLInputElement>) {
@@ -76,9 +121,102 @@ export default function Profile() {
     reader.onload = () => {
       const uri = String(reader.result);
       setAvatarUri(uri);
-      try { localStorage.setItem('gospeak-avatar', uri); } catch { /* Speicher kann voll sein. */ }
+      try { localStorage.setItem(AVATAR_STORAGE_KEY, uri); } catch { /* Speicher kann voll sein. */ }
     };
     reader.readAsDataURL(file);
+  }
+
+  async function toggleReminders(next: boolean) {
+    if (!next) {
+      setRemindersEnabled(false);
+      return;
+    }
+    const granted = await ensureNotificationPermission();
+    if (!granted) {
+      Alert.alert(strings.reminders, strings.remindersPermissionDenied);
+      return;
+    }
+    setRemindersEnabled(true);
+  }
+
+  /** Sichert den Fortschritt als teilbare JSON-Datei - ausschliesslich lokal, ohne Server. */
+  async function exportProgress() {
+    const backup = serializeProgress();
+    const json = JSON.stringify(backup, null, 2);
+
+    if (Platform.OS === 'web') {
+      try {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = BACKUP_FILE_NAME;
+        link.click();
+        URL.revokeObjectURL(url);
+      } catch {
+        Alert.alert(strings.backupTitle, strings.backupExportError);
+      }
+      return;
+    }
+
+    try {
+      const fileUri = `${FileSystem.cacheDirectory}${BACKUP_FILE_NAME}`;
+      await FileSystem.writeAsStringAsync(fileUri, json);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, { mimeType: 'application/json', dialogTitle: strings.backupExport });
+      }
+    } catch {
+      Alert.alert(strings.backupTitle, strings.backupExportError);
+    }
+  }
+
+  function applyBackupText(raw: string) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      Alert.alert(strings.backupTitle, strings.backupImportError);
+      return;
+    }
+    if (!isProgressBackup(parsed)) {
+      Alert.alert(strings.backupTitle, strings.backupImportError);
+      return;
+    }
+
+    Alert.alert(strings.backupImportConfirmTitle, strings.backupImportConfirmDesc, [
+      { text: strings.cancel, style: 'cancel' },
+      {
+        text: strings.confirm,
+        style: 'destructive',
+        onPress: () => {
+          restoreProgress(parsed);
+          Alert.alert(strings.backupTitle, strings.backupImportSuccess);
+        },
+      },
+    ]);
+  }
+
+  function importProgress() {
+    if (Platform.OS === 'web') {
+      backupFileInput.current?.click();
+      return;
+    }
+    DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true })
+      .then(async (result) => {
+        if (result.canceled || !result.assets?.[0]) return;
+        const text = await FileSystem.readAsStringAsync(result.assets[0].uri);
+        applyBackupText(text);
+      })
+      .catch(() => Alert.alert(strings.backupTitle, strings.backupImportError));
+  }
+
+  function onBackupFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => applyBackupText(String(reader.result ?? ''));
+    reader.readAsText(file);
+    event.target.value = '';
   }
 
   const level = levelFromXp(xp);
@@ -135,6 +273,9 @@ export default function Profile() {
             <View pointerEvents="none" style={styles.avatarEdit}><MaterialCommunityIcons name="pencil" size={16} color={colors.textOnDark} /></View>
           </Pressable>
           {Platform.OS === 'web' ? <input ref={fileInput} type="file" accept="image/*" onChange={onAvatarFile} style={{ display: 'none' }} /> : null}
+          {Platform.OS === 'web' ? (
+            <input ref={backupFileInput} type="file" accept="application/json,.json" onChange={onBackupFile} style={{ display: 'none' }} />
+          ) : null}
           <Text accessibilityRole="header" style={styles.course}>
             {native ? LANGUAGES[native].name : ''} → {target ? LANGUAGES[target].name : ''}
           </Text>
@@ -272,6 +413,33 @@ export default function Profile() {
         </Pressable>
 
         <Pressable
+          accessibilityRole="switch"
+          accessibilityLabel={`${strings.reminders} ${remindersEnabled ? strings.disabled : strings.enabled}`}
+          accessibilityState={{ checked: remindersEnabled }}
+          accessibilityHint={strings.remindersHint}
+          style={styles.item}
+          onPress={() => toggleReminders(!remindersEnabled)}
+        >
+          <MaterialCommunityIcons name={remindersEnabled ? 'bell-ring-outline' : 'bell-off-outline'} size={22} color={colors.purple} />
+          <Text style={styles.itemText}>{strings.reminders}</Text>
+          <Text style={styles.modeValue}>{remindersEnabled ? strings.enabled : strings.disabled}</Text>
+        </Pressable>
+
+        <Text style={styles.sectionTitle}>{strings.backupTitle}</Text>
+
+        <Pressable accessibilityRole="button" accessibilityLabel={strings.backupExport} style={styles.item} onPress={exportProgress}>
+          <MaterialCommunityIcons name="tray-arrow-up" size={22} color={colors.blue} />
+          <Text style={styles.itemText}>{strings.backupExport}</Text>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.lockedText} />
+        </Pressable>
+
+        <Pressable accessibilityRole="button" accessibilityLabel={strings.backupImport} style={styles.item} onPress={importProgress}>
+          <MaterialCommunityIcons name="tray-arrow-down" size={22} color={colors.blue} />
+          <Text style={styles.itemText}>{strings.backupImport}</Text>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.lockedText} />
+        </Pressable>
+
+        <Pressable
           accessibilityRole="button"
           accessibilityLabel={strings.resetProgress}
           style={styles.item}
@@ -357,7 +525,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
   },
-  goalChipActive: { borderColor: colors.orange, backgroundColor: '#3A2B12' },
+  goalChipActive: { borderColor: colors.orange, backgroundColor: colors.selectedWarnBg },
   goalText: { ...font.small, color: colors.textMuted },
   goalTextActive: { color: colors.orange },
   item: {
@@ -378,7 +546,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
   },
-  historyItemActive: { borderColor: colors.blue, backgroundColor: '#102F45' },
+  historyItemActive: { borderColor: colors.blue, backgroundColor: colors.selectedBg },
   historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   historyText: { ...font.body, color: colors.text },
   historyCount: { ...font.small, color: colors.textMuted },
@@ -387,7 +555,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   settingHint: { ...font.small, color: colors.textMuted },
   levelChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   levelChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 2, borderColor: colors.border, borderRadius: radius.pill },
-  levelChipActive: { borderColor: colors.blue, backgroundColor: '#102F45' },
+  levelChipActive: { borderColor: colors.blue, backgroundColor: colors.selectedBg },
   levelChipText: { ...font.small, color: colors.textMuted },
   levelChipTextActive: { color: colors.blue },
 });

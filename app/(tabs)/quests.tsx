@@ -17,6 +17,9 @@ export default function Quests() {
   const streak = useStore((s) => s.streak);
   const completed = useStore((s) => s.completed);
   const learnedWords = useStore((s) => s.learnedCount());
+  const perfectStreak = useStore((s) => s.perfectStreak);
+  const weekendDays = useStore((s) => s.weekendDays);
+  const startedCourses = useStore((s) => s.startedCoursesCount());
   const strings = t(native);
 
   const source = {
@@ -25,6 +28,9 @@ export default function Quests() {
     learnedWords,
     lessonsCompleted: Object.keys(completed).length,
     level: levelFromXp(xp),
+    perfectStreak,
+    startedCourses,
+    weekendDays: weekendDays.length,
   };
 
   return (
