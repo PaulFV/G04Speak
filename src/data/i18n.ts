@@ -92,7 +92,6 @@ export interface Strings {
   skillPro: string;
   skillTeacher: string;
   changeAvatar: string;
-  avatarWebOnly: string;
 
   levelQuestion: string;
   levelHint: string;
@@ -100,6 +99,24 @@ export interface Strings {
   languageHistory: string;
   currentCourse: string;
   lessonsShort: string;
+
+  reminders: string;
+  remindersHint: string;
+  streakReminderTitle: string;
+  streakReminderBody: string;
+  heartsFullTitle: string;
+  heartsFullBody: string;
+
+  backupTitle: string;
+  backupExport: string;
+  backupImport: string;
+  backupImportConfirmTitle: string;
+  backupImportConfirmDesc: string;
+  backupImportSuccess: string;
+  backupImportError: string;
+  backupExportError: string;
+  avatarPermissionDenied: string;
+  remindersPermissionDenied: string;
 }
 
 export const UI: Record<Lang, Strings> = {
@@ -174,12 +191,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Lernlevel',
     skillBeginner: 'Anfänger', skillAdvanced: 'Fortgeschritten', skillPro: 'Profi', skillTeacher: 'Lehrer',
     changeAvatar: 'Profilbild ändern',
-    avatarWebOnly: 'Die Bildauswahl ist aktuell in der Web-Version verfügbar.',
     levelQuestion: 'Wie gut kennst du diese Sprache schon?',
     levelHint: 'Fortgeschrittene starten weiter vorne im Kurs statt bei null.',
     languageHistory: 'Sprachverlauf',
     currentCourse: 'Aktuell',
     lessonsShort: 'Lektionen',
+
+    reminders: 'Erinnerungen',
+    remindersHint: 'Erinnert dich lokal, wenn deine Serie in Gefahr ist oder Herzen wieder voll sind.',
+    streakReminderTitle: 'Deine Serie ist in Gefahr!',
+    streakReminderBody: 'Du hast heute noch nicht gelernt. Eine kurze Lektion reicht.',
+    heartsFullTitle: 'Herzen sind wieder voll ❤️',
+    heartsFullBody: 'Zeit für die nächste Lektion in G04Speak.',
+
+    backupTitle: 'Fortschritt sichern',
+    backupExport: 'Fortschritt exportieren',
+    backupImport: 'Fortschritt importieren',
+    backupImportConfirmTitle: 'Fortschritt ersetzen?',
+    backupImportConfirmDesc: 'Der aktuelle Fortschritt auf diesem Gerät wird durch diese Datei ersetzt.',
+    backupImportSuccess: 'Fortschritt wurde wiederhergestellt.',
+    backupImportError: 'Diese Datei konnte nicht gelesen werden.',
+    backupExportError: 'Sichern ist fehlgeschlagen.',
+    avatarPermissionDenied: 'Ohne Zugriff auf deine Fotos kann kein Profilbild gesetzt werden.',
+    remindersPermissionDenied: 'Benachrichtigungen sind für G04Speak in den Systemeinstellungen deaktiviert.',
   },
   en: {
     tagline: 'Learn 8 languages — free and playful',
@@ -252,12 +286,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Skill level',
     skillBeginner: 'Beginner', skillAdvanced: 'Advanced', skillPro: 'Pro', skillTeacher: 'Teacher',
     changeAvatar: 'Change profile picture',
-    avatarWebOnly: 'Picture selection is currently only available in the web version.',
     levelQuestion: 'How well do you already know this language?',
     levelHint: 'Advanced learners start further into the course instead of from zero.',
     languageHistory: 'Language history',
     currentCourse: 'Current',
     lessonsShort: 'lessons',
+
+    reminders: 'Reminders',
+    remindersHint: 'Local reminders when your streak is at risk or your hearts are full again.',
+    streakReminderTitle: 'Your streak is at risk!',
+    streakReminderBody: 'You haven\'t practiced today yet. A short lesson is enough.',
+    heartsFullTitle: 'Hearts are full again ❤️',
+    heartsFullBody: 'Time for your next lesson in G04Speak.',
+
+    backupTitle: 'Back up progress',
+    backupExport: 'Export progress',
+    backupImport: 'Import progress',
+    backupImportConfirmTitle: 'Replace progress?',
+    backupImportConfirmDesc: 'Your current progress on this device will be replaced by this file.',
+    backupImportSuccess: 'Progress has been restored.',
+    backupImportError: 'This file could not be read.',
+    backupExportError: 'Backup failed.',
+    avatarPermissionDenied: 'Without access to your photos, no profile picture can be set.',
+    remindersPermissionDenied: 'Notifications are disabled for G04Speak in the system settings.',
   },
   es: {
     tagline: 'Aprende 8 idiomas — gratis y jugando',
@@ -330,12 +381,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Nivel de aprendizaje',
     skillBeginner: 'Principiante', skillAdvanced: 'Avanzado', skillPro: 'Profesional', skillTeacher: 'Profesor',
     changeAvatar: 'Cambiar foto de perfil',
-    avatarWebOnly: 'La selección de foto solo está disponible en la versión web por ahora.',
     levelQuestion: '¿Qué tan bien conoces ya este idioma?',
     levelHint: 'Los usuarios avanzados empiezan más adelante en el curso, no desde cero.',
     languageHistory: 'Historial de idiomas',
     currentCourse: 'Actual',
     lessonsShort: 'lecciones',
+
+    reminders: 'Recordatorios',
+    remindersHint: 'Recordatorios locales cuando tu racha corra peligro o tus vidas estén completas de nuevo.',
+    streakReminderTitle: '¡Tu racha está en peligro!',
+    streakReminderBody: 'Todavía no has practicado hoy. Basta con una lección corta.',
+    heartsFullTitle: 'Vidas completas de nuevo ❤️',
+    heartsFullBody: 'Es hora de tu próxima lección en G04Speak.',
+
+    backupTitle: 'Copia de seguridad del progreso',
+    backupExport: 'Exportar progreso',
+    backupImport: 'Importar progreso',
+    backupImportConfirmTitle: '¿Reemplazar progreso?',
+    backupImportConfirmDesc: 'El progreso actual en este dispositivo será reemplazado por este archivo.',
+    backupImportSuccess: 'El progreso se ha restaurado.',
+    backupImportError: 'No se pudo leer este archivo.',
+    backupExportError: 'Error al guardar la copia de seguridad.',
+    avatarPermissionDenied: 'Sin acceso a tus fotos no se puede establecer una foto de perfil.',
+    remindersPermissionDenied: 'Las notificaciones están desactivadas para G04Speak en los ajustes del sistema.',
   },
   ro: {
     tagline: 'Învață 8 limbi — gratuit și cu joacă',
@@ -408,12 +476,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Nivel de învățare',
     skillBeginner: 'Începător', skillAdvanced: 'Avansat', skillPro: 'Profesionist', skillTeacher: 'Profesor',
     changeAvatar: 'Schimbă poza de profil',
-    avatarWebOnly: 'Selectarea imaginii este momentan disponibilă doar în versiunea web.',
     levelQuestion: 'Cât de bine cunoști deja această limbă?',
     levelHint: 'Cei avansați încep mai departe în curs, nu de la zero.',
     languageHistory: 'Istoricul limbilor',
     currentCourse: 'Curent',
     lessonsShort: 'lecții',
+
+    reminders: 'Mementouri',
+    remindersHint: 'Mementouri locale atunci când seria ta este în pericol sau inimile s-au reumplut.',
+    streakReminderTitle: 'Seria ta este în pericol!',
+    streakReminderBody: 'Încă nu ai exersat azi. O lecție scurtă este suficientă.',
+    heartsFullTitle: 'Inimile s-au reumplut ❤️',
+    heartsFullBody: 'E timpul pentru următoarea lecție în G04Speak.',
+
+    backupTitle: 'Salvează progresul',
+    backupExport: 'Exportă progresul',
+    backupImport: 'Importă progresul',
+    backupImportConfirmTitle: 'Înlocuiești progresul?',
+    backupImportConfirmDesc: 'Progresul actual de pe acest dispozitiv va fi înlocuit de acest fișier.',
+    backupImportSuccess: 'Progresul a fost restaurat.',
+    backupImportError: 'Acest fișier nu a putut fi citit.',
+    backupExportError: 'Salvarea a eșuat.',
+    avatarPermissionDenied: 'Fără acces la fotografii nu poate fi setată o poză de profil.',
+    remindersPermissionDenied: 'Notificările sunt dezactivate pentru G04Speak în setările sistemului.',
   },
   ru: {
     tagline: 'Учите 8 языков — бесплатно и с удовольствием',
@@ -486,12 +571,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Уровень владения',
     skillBeginner: 'Начинающий', skillAdvanced: 'Продвинутый', skillPro: 'Профи', skillTeacher: 'Учитель',
     changeAvatar: 'Изменить фото профиля',
-    avatarWebOnly: 'Выбор фото пока доступен только в веб-версии.',
     levelQuestion: 'Как хорошо ты уже знаешь этот язык?',
     levelHint: 'Продвинутые ученики начинают дальше в курсе, а не с нуля.',
     languageHistory: 'История языков',
     currentCourse: 'Текущий',
     lessonsShort: 'уроков',
+
+    reminders: 'Напоминания',
+    remindersHint: 'Локальные напоминания, если серия под угрозой или сердца снова полны.',
+    streakReminderTitle: 'Твоя серия под угрозой!',
+    streakReminderBody: 'Ты ещё не занимался сегодня. Достаточно короткого урока.',
+    heartsFullTitle: 'Сердца снова полны ❤️',
+    heartsFullBody: 'Время для следующего урока в G04Speak.',
+
+    backupTitle: 'Резервная копия прогресса',
+    backupExport: 'Экспортировать прогресс',
+    backupImport: 'Импортировать прогресс',
+    backupImportConfirmTitle: 'Заменить прогресс?',
+    backupImportConfirmDesc: 'Текущий прогресс на этом устройстве будет заменён этим файлом.',
+    backupImportSuccess: 'Прогресс восстановлен.',
+    backupImportError: 'Не удалось прочитать этот файл.',
+    backupExportError: 'Не удалось создать резервную копию.',
+    avatarPermissionDenied: 'Без доступа к фото нельзя установить фото профиля.',
+    remindersPermissionDenied: 'Уведомления для G04Speak отключены в настройках системы.',
   },
   tr: {
     tagline: '8 dil öğren — ücretsiz ve eğlenceli',
@@ -564,12 +666,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Öğrenme seviyesi',
     skillBeginner: 'Başlangıç', skillAdvanced: 'İleri', skillPro: 'Profesyonel', skillTeacher: 'Öğretmen',
     changeAvatar: 'Profil resmini değiştir',
-    avatarWebOnly: 'Resim seçimi şu anda yalnızca web sürümünde kullanılabilir.',
     levelQuestion: 'Bu dili şu anda ne kadar iyi biliyorsun?',
     levelHint: 'İleri seviye öğrenciler kursta sıfırdan değil, daha ileriden başlar.',
     languageHistory: 'Dil geçmişi',
     currentCourse: 'Güncel',
     lessonsShort: 'ders',
+
+    reminders: 'Hatırlatıcılar',
+    remindersHint: 'Serin tehlikedeyken veya kalplerin dolduğunda yerel hatırlatmalar.',
+    streakReminderTitle: 'Serin tehlikede!',
+    streakReminderBody: 'Bugün henüz çalışmadın. Kısa bir ders yeterli.',
+    heartsFullTitle: 'Kalpler yeniden doldu ❤️',
+    heartsFullBody: 'G04Speak\'te bir sonraki ders zamanı.',
+
+    backupTitle: 'İlerlemeyi yedekle',
+    backupExport: 'İlerlemeyi dışa aktar',
+    backupImport: 'İlerlemeyi içe aktar',
+    backupImportConfirmTitle: 'İlerleme değiştirilsin mi?',
+    backupImportConfirmDesc: 'Bu cihazdaki mevcut ilerleme bu dosyayla değiştirilecek.',
+    backupImportSuccess: 'İlerleme geri yüklendi.',
+    backupImportError: 'Bu dosya okunamadı.',
+    backupExportError: 'Yedekleme başarısız oldu.',
+    avatarPermissionDenied: 'Fotoğraflarına erişim olmadan profil fotoğrafı ayarlanamaz.',
+    remindersPermissionDenied: 'Bildirimler G04Speak için sistem ayarlarında devre dışı.',
   },
   hu: {
     tagline: 'Tanulj 8 nyelvet — ingyen és játékosan',
@@ -642,12 +761,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Tanulási szint',
     skillBeginner: 'Kezdő', skillAdvanced: 'Haladó', skillPro: 'Profi', skillTeacher: 'Tanár',
     changeAvatar: 'Profilkép módosítása',
-    avatarWebOnly: 'A képválasztás jelenleg csak a webes verzióban érhető el.',
     levelQuestion: 'Mennyire ismered már ezt a nyelvet?',
     levelHint: 'A haladók nem a legelejétől, hanem a kurzus egy későbbi pontjától kezdenek.',
     languageHistory: 'Nyelvi előzmények',
     currentCourse: 'Aktuális',
     lessonsShort: 'lecke',
+
+    reminders: 'Emlékeztetők',
+    remindersHint: 'Helyi emlékeztetők, ha a sorozatod veszélyben van, vagy az életeid újra teltek.',
+    streakReminderTitle: 'A sorozatod veszélyben van!',
+    streakReminderBody: 'Ma még nem gyakoroltál. Egy rövid lecke is elég.',
+    heartsFullTitle: 'Az életek újra teltek ❤️',
+    heartsFullBody: 'Itt az idő a következő leckéhez a G04Speak-ben.',
+
+    backupTitle: 'Haladás mentése',
+    backupExport: 'Haladás exportálása',
+    backupImport: 'Haladás importálása',
+    backupImportConfirmTitle: 'Lecseréled a haladást?',
+    backupImportConfirmDesc: 'Az eszközön lévő jelenlegi haladást ez a fájl felülírja.',
+    backupImportSuccess: 'A haladás visszaállítva.',
+    backupImportError: 'Ez a fájl nem olvasható be.',
+    backupExportError: 'A mentés nem sikerült.',
+    avatarPermissionDenied: 'Fotóhozzáférés nélkül nem állítható be profilkép.',
+    remindersPermissionDenied: 'Az értesítések letiltva a G04Speak számára a rendszerbeállításokban.',
   },
   pl: {
     tagline: 'Ucz się 8 języków — za darmo i z zabawą',
@@ -720,12 +856,29 @@ export const UI: Record<Lang, Strings> = {
     skillLevel: 'Poziom nauki',
     skillBeginner: 'Początkujący', skillAdvanced: 'Zaawansowany', skillPro: 'Profesjonalista', skillTeacher: 'Nauczyciel',
     changeAvatar: 'Zmień zdjęcie profilowe',
-    avatarWebOnly: 'Wybór zdjęcia jest obecnie dostępny tylko w wersji internetowej.',
     levelQuestion: 'Jak dobrze znasz już ten język?',
     levelHint: 'Zaawansowani zaczynają dalej w kursie, a nie od zera.',
     languageHistory: 'Historia języków',
     currentCourse: 'Aktualny',
     lessonsShort: 'lekcji',
+
+    reminders: 'Przypomnienia',
+    remindersHint: 'Lokalne przypomnienia, gdy passa jest zagrożona albo życia znów są pełne.',
+    streakReminderTitle: 'Twoja passa jest zagrożona!',
+    streakReminderBody: 'Nie uczyłeś się jeszcze dzisiaj. Wystarczy krótka lekcja.',
+    heartsFullTitle: 'Życia znów pełne ❤️',
+    heartsFullBody: 'Czas na kolejną lekcję w G04Speak.',
+
+    backupTitle: 'Kopia zapasowa postępów',
+    backupExport: 'Eksportuj postępy',
+    backupImport: 'Importuj postępy',
+    backupImportConfirmTitle: 'Zastąpić postępy?',
+    backupImportConfirmDesc: 'Bieżące postępy na tym urządzeniu zostaną zastąpione przez ten plik.',
+    backupImportSuccess: 'Postępy zostały przywrócone.',
+    backupImportError: 'Nie udało się odczytać tego pliku.',
+    backupExportError: 'Tworzenie kopii zapasowej nie powiodło się.',
+    avatarPermissionDenied: 'Bez dostępu do zdjęć nie można ustawić zdjęcia profilowego.',
+    remindersPermissionDenied: 'Powiadomienia dla G04Speak są wyłączone w ustawieniach systemu.',
   },
 };
 

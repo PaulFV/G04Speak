@@ -1,3 +1,4 @@
+import { ALL_LESSONS } from '../lib/course';
 import { Lang } from './languages';
 
 /**
@@ -11,6 +12,12 @@ export interface AchievementSource {
   learnedWords: number;
   lessonsCompleted: number;
   level: number;
+  /** Fehlerfreie Lektionen in Folge (reisst bei der ersten unperfekten). */
+  perfectStreak: number;
+  /** Anzahl Sprachpaare mit mindestens einer abgeschlossenen Lektion. */
+  startedCourses: number;
+  /** Anzahl verschiedener Wochenendtage (Sa/So) mit mindestens einer Lektion. */
+  weekendDays: number;
 }
 
 export interface Achievement {
@@ -109,6 +116,50 @@ export const ACHIEVEMENTS: Achievement[] = [
     title: {
       de: 'Gelehrter', en: 'Scholar', es: 'Erudito', ro: 'Cărturar',
       ru: 'Знаток', tr: 'Bilgin', hu: 'Tudós', pl: 'Uczony',
+    },
+  },
+  {
+    id: 'perfect_streak_5',
+    icon: 'star-four-points',
+    color: '#F59E0B',
+    target: 5,
+    value: (s) => s.perfectStreak,
+    title: {
+      de: '5 perfekte Lektionen in Folge', en: '5 perfect lessons in a row', es: '5 lecciones perfectas seguidas', ro: '5 lecții perfecte la rând',
+      ru: '5 идеальных уроков подряд', tr: 'Arka arkaya 5 kusursuz ders', hu: '5 hibátlan lecke egymás után', pl: '5 idealnych lekcji z rzędu',
+    },
+  },
+  {
+    id: 'polyglot_2',
+    icon: 'earth',
+    color: '#0EA5E9',
+    target: 2,
+    value: (s) => s.startedCourses,
+    title: {
+      de: 'Mehrsprachig unterwegs', en: 'Multilingual journey', es: 'En camino multilingüe', ro: 'În drum multilingv',
+      ru: 'Путь полиглота', tr: 'Çok dilli yolculuk', hu: 'Többnyelvű úton', pl: 'Wielojęzyczna podróż',
+    },
+  },
+  {
+    id: 'weekend_warrior',
+    icon: 'weather-sunny',
+    color: '#22C55E',
+    target: 4,
+    value: (s) => s.weekendDays,
+    title: {
+      de: 'Wochenend-Kriegerin/-Krieger', en: 'Weekend warrior', es: 'Guerrero/a de fin de semana', ro: 'Luptător/oare de weekend',
+      ru: 'Воин выходного дня', tr: 'Hafta sonu savaşçısı', hu: 'Hétvégi harcos', pl: 'Wojownik weekendu',
+    },
+  },
+  {
+    id: 'course_complete',
+    icon: 'trophy-variant',
+    color: '#DC2626',
+    target: ALL_LESSONS.length,
+    value: (s) => s.lessonsCompleted,
+    title: {
+      de: 'Kurs abgeschlossen', en: 'Course completed', es: 'Curso completado', ro: 'Curs finalizat',
+      ru: 'Курс пройден', tr: 'Kurs tamamlandı', hu: 'Kurzus teljesítve', pl: 'Kurs ukończony',
     },
   },
 ];
